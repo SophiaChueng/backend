@@ -13,6 +13,10 @@
     <version>4.1-SNAPSHOT</version>
 
     <dependencies>
+             <properties>
+  <sonar.organization>shyz</sonar.organization>
+  <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+</properties>
         <dependency>
             <groupId>com.yizhi</groupId>
             <artifactId>cloud-training-project-api</artifactId>
