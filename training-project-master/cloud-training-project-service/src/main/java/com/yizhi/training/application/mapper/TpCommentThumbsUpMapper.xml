@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.TpCommentThumbsUpMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yizhi.training.application.domain.TpCommentThumbsUp">
+        <id column="tb_id" property="id"/>
+        <result column="tb_tp_comment_id" property="tpCommentId"/>
+        <result column="tb_account_id" property="accountId"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        tb
+        .
+        id
+        AS tb_id,
+      tb.tp_comment_id AS tb_tp_comment_id,
+      tb.account_id AS tb_account_id
+    </sql>
+
+
+    <select id="countThumbsUp" resultType="java.lang.Integer">
+        select count(distinct(tb.id)) from tp_comment_thumbs_up tb
+        <where>
+            <if test="commentId!=null">
+                and tb.tp_comment_id=#{commentId}
+            </if>
+        </where>
+    </select>
+
+</mapper>

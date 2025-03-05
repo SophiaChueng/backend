@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.TpPlanActivityMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yizhi.training.application.domain.TpPlanActivity">
+        <id column="tb_id" property="id"/>
+        <result column="tb_training_project_id" property="trainingProjectId"/>
+        <result column="tb_tp_plan_id" property="tpPlanId"/>
+        <result column="tb_type" property="type"/>
+        <result column="tb_relation_id" property="relationId"/>
+        <result column="tb_name" property="name"/>
+        <result column="tb_address" property="address"/>
+        <result column="tb_sort" property="sort"/>
+        <result column="tb_deleted" property="deleted"/>
+        <result column="tb_create_by_id" property="createById"/>
+        <result column="tb_create_by_name" property="createByName"/>
+        <result column="tb_create_time" property="createTime"/>
+        <result column="tb_update_by_id" property="updateById"/>
+        <result column="tb_update_by_name" property="updateByName"/>
+        <result column="tb_update_time" property="updateTime"/>
+        <result column="tb_site_id" property="siteId"/>
+        <result column="tb_org_id" property="orgId"/>
+        <result column="tb_company_id" property="companyId"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        tb
+        .
+        id
+        AS tb_id,
+      tb.training_project_id AS tb_training_project_id,
+      tb.tp_plan_id AS tb_tp_plan_id,
+      tb.type AS tb_type,
+      tb.relation_id AS tb_relation_id,
+      tb.name AS tb_name,
+      tb.address AS tb_address,
+      tb.sort AS tb_sort,
+      tb.deleted AS tb_deleted,
+      tb.create_by_id AS tb_create_by_id,
+      tb.create_by_name AS tb_create_by_name,
+      tb.create_time AS tb_create_time,
+      tb.update_by_id AS tb_update_by_id,
+      tb.update_by_name AS tb_update_by_name,
+      tb.update_time AS tb_update_time,
+      tb.site_id AS tb_site_id,
+      tb.org_id AS tb_org_id,
+      tb.company_id AS tb_company_id
+    </sql>
+
+    <!-- 批量插入 -->
+    <insert id="batchInsert">
+        insert into tp_plan_activity
+        (id,
+        training_project_id,
+        tp_plan_id,
+        `type`,
+        relation_id,
+        `name`,
+        `address`,
+        sort,
+        deleted,
+        create_by_id,
+        create_by_name,
+        create_time,
+        update_by_id,
+        update_by_name,
+        update_time,
+        site_id,
+        org_id,
+        company_id)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.trainingProjectId}, #{item.tpPlanId}, #{item.type}, #{item.relationId},
+            #{item.name}, #{item.address}, #{item.sort}, #{item.deleted}, #{item.createById}, #{item.createByName},
+            #{item.createTime}, #{item.updateById}, #{item.updateByName}, #{item.updateTime},
+            #{item.siteId}, #{item.orgId}, #{item.companyId})
+        </foreach>
+    </insert>
+
+
+    <select id="selectListByIds" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from tp_plan_activity tb
+        where tb.id in
+        <foreach collection="list" item="item" open="(" close=")" separator=",">
+            #{item}
+        </foreach>
+        and tb.deleted = 0
+    </select>
+
+    <update id="deleteByTpPlanIds">
+        update tp_plan_activity
+        set deleted = 1,
+        update_by_id = #{accountId},
+        update_by_name = #{accountName},
+        update_time = #{now}
+        where tp_plan_id in
+        (<foreach collection="tpPlanIds" item="item" separator=",">#{item}</foreach>)
+    </update>
+
+    <update id="deleteByIds">
+        update tp_plan_activity
+        set deleted = 1,
+        update_by_id = #{accountId},
+        update_by_name = #{accountName},
+        update_time = #{now}
+        where id in
+        (<foreach collection="ids" item="item" separator=",">#{item}</foreach>)
+    </update>
+
+    <select id="getIdsByTpPlanIds" resultType="java.lang.Long">
+        select id
+        from tp_plan_activity
+        where
+        -- deleted = 0 and
+        tp_plan_id in
+        (<foreach collection="tpPlanIds" item="item" separator=",">#{item}</foreach>)
+    </select>
+
+    <select id="getRelationIdsByTpPlanIds" resultType="java.lang.Long">
+        select distinct relation_id
+        from tp_plan_activity
+        where
+        deleted = 0
+        and type not in (6)
+        and tp_plan_id in
+        (<foreach collection="tpPlanIds" item="item" separator=",">#{item}</foreach>)
+    </select>
+
+    <select id="getRelationIdsByTpPlanId" resultType="java.lang.Long">
+        select relation_id
+        from tp_plan_activity
+        where deleted = 0
+          and type not in (6)
+          and tp_plan_id = #{tpPlanId}
+    </select>
+
+    <select id="checkBizIsExistInTp" resultType="java.lang.Long">
+        select distinct relation_id
+        from tp_plan_activity
+        where
+        deleted = 0
+        and relation_id in
+        (<foreach collection="ids" item="id" separator=",">#{id}</foreach>)
+    </select>
+
+    <select id="checkBizIsExistInTpNames" resultType="java.lang.String">
+        select tp.name
+        from training_project tp
+        left join tp_plan_activity tpa on tpa.training_project_id = tp.id
+        where
+        tp.deleted = 0
+        and tpa.deleted = 0
+        and tp.status = 1
+        -- and tpa.type = 1
+        and tpa.relation_id in
+        (<foreach collection="ids" item="id" separator=",">#{id}</foreach>)
+    </select>
+
+    <select id="getIdsByRelationIds" resultType="java.lang.Long">
+        select id
+        from tp_plan_activity
+        where
+        deleted = 0
+        and tp_plan_id = #{planId}
+        and relation_id in
+        (<foreach collection="relationIds" item="id" separator=",">#{id}</foreach>)
+    </select>
+
+    <select id="getRelationIdsByTpId" resultType="java.lang.Long">
+        select relation_id
+        from tp_plan_activity
+        where training_project_id = #{tpId}
+          and deleted = 0
+    </select>
+
+    <select id="getPlanIdsByRelationId" resultType="java.lang.Long">
+        select tp_plan_id
+        from tp_plan_activity
+        where deleted = 0
+          and relation_id = #{relationId}
+    </select>
+
+    <select id="getActivities" resultType="com.yizhi.training.application.vo.manage.TpPlanFinishedActivityVo">
+        SELECT t.id as activityId, t.name as title, t.type, t.relation_id, t.address
+        from tp_plan_activity t
+        where t.deleted = 0
+          and t.tp_plan_id = #{tpPlanId}
+        ORDER BY t.sort DESC
+    </select>
+
+    <select id="getAllRelationIdsByPlanId" resultType="java.lang.Long">
+        select distinct relation_id
+        from tp_plan_activity
+        where site_id = #{siteId}
+          and deleted = 0
+          and tp_plan_id = #{planId}
+          and type not in (6)
+    </select>
+
+
+    <select id="listTpPlanActivityByTpId" resultType="com.yizhi.training.application.domain.TpPlanActivity">
+        SELECT training_project_id AS trainingProjectId,
+               tp_plan_id          AS tpPlanId,
+               TYPE                AS TYPE,
+               relation_id         AS relationId,
+               NAME                AS NAME,
+               company_id          AS companyId,
+               site_id             AS siteId
+        FROM `tp_plan_activity`
+        where training_project_id = #{id}
+          and deleted = 0
+        GROUP BY training_project_id, tp_plan_id, TYPE, relation_id
+    </select>
+
+    <select id="checkBizCanDown" resultType="java.lang.Integer">
+        SELECT count(1)
+        FROM `tp_plan_activity` a
+                 inner join tp_plan b
+                            on (a.tp_plan_id = b.id and a.training_project_id = b.training_project_id and b.deleted = 0)
+                 inner join training_project c on (c.id = a.training_project_id and c.status = 1 and c.deleted = 0)
+        where a.deleted = 0
+          and a.type = #{bizType}
+          and a.relation_id = #{relationId}
+    </select>
+    <select id="getTpCourseList" resultType="com.yizhi.training.application.domain.TpPlanActivity">
+        SELECT a.*
+        from training_project p
+        LEFT JOIN tp_plan pn on pn.training_project_id = p.id
+        LEFT JOIN tp_plan_activity a on a.training_project_id = p.id and a.tp_plan_id = pn.id
+        where p.id in
+        <foreach collection="tpIds" separator="," open="(" close=")" item="tpId">
+            #{tpId}
+        </foreach>
+        and p.company_id = #{companyId} and p.site_id = #{siteId} and p.deleted = 0
+        and pn.deleted = 0 and a.deleted = 0 and a.type = 0
+    </select>
+
+    <!--课程关联项目列表-->
+    <select id="courseRelateProjectList" resultType="com.yizhi.training.application.vo.domain.CourseRelateProjectVO">
+        SELECT tp.id,
+               tp.training_project_id AS trainingProjectId,
+               tp.tp_plan_id          as planId,
+               tp.relation_id         as courseId,
+               tp.customize_name      as courseName,
+               pl.name                as planName,
+               tr.name                as projectName
+
+        FROM tp_plan_activity tp
+                 left join training_project tr on tp.training_project_id = tr.id
+                 left join tp_plan pl on tp.tp_plan_id = pl.id
+        where relation_id = #{courseId}
+          and tp.deleted = 0
+          and tr.deleted = 0
+          and pl.deleted = 0
+        order by tp.sort desc, tp.create_time desc
+    </select>
+    <select id="selectBySiteIds" resultType="com.yizhi.training.application.vo.domain.TpPlanActivityVo">
+        SELECT training_project_id AS trainingProjectId,
+        tp_plan_id AS tpPlanId,
+        TYPE AS TYPE,
+        relation_id AS relationId,
+        NAME AS NAME,
+        company_id AS companyId,
+        site_id AS siteId
+        FROM `tp_plan_activity`
+        where site_id in
+        <foreach collection="siteIds" separator="," item="siteId" close=")" open="(">
+            #{siteId}
+        </foreach>
+        and deleted = 0
+        GROUP BY training_project_id, tp_plan_id, TYPE, relation_id
+    </select>
+    <select id="getAllAiaActivity" resultType="com.yizhi.training.application.vo.domain.TpPlanActivityVo">
+        SELECT training_project_id AS trainingProjectId,
+        tp_plan_id AS tpPlanId,
+        TYPE AS TYPE,
+        relation_id AS relationId,
+        NAME AS NAME,
+        address as address
+        FROM `tp_plan_activity`
+        where site_id = #{siteId}
+        and training_project_id in
+        <foreach collection="aiaProjectKmhTpIdList" close=")" open="(" item="id" separator=",">
+            #{id}
+        </foreach>
+        and deleted = 0
+    </select>
+
+    <select id="checkExistRelatedProject" resultType="java.lang.String">
+        select tp.name
+        from training_project tp
+                 left join tp_plan_activity tpa on tpa.training_project_id = tp.id
+        where tp.deleted = 0
+          and tpa.deleted = 0
+          and tp.status = 1
+          and tpa.type = #{type}
+          and tpa.relation_id = #{id}
+    </select>
+</mapper>

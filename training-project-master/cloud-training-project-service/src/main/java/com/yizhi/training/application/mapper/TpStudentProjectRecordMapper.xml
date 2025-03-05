@@ -1,0 +1,506 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.TpStudentProjectRecordMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yizhi.training.application.domain.TpStudentProjectRecord">
+        <id column="tb_id" property="id"/>
+        <result column="tb_training_project_id" property="trainingProjectId"/>
+        <result column="tb_finished" property="finished"/>
+        <result column="tb_account_id" property="accountId"/>
+        <result column="tb_finish_date" property="finishDate"/>
+        <result column="tb_site_id" property="siteId"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        tb
+        .
+        id
+        AS tb_id,
+      tb.training_project_id AS tb_training_project_id,
+      tb.finished AS tb_finished,
+      tb.account_id AS tb_account_id,
+      tb.finish_date AS tb_finish_date,
+      tb.site_id AS tb_site_id
+    </sql>
+
+    <select id="getByAccountId" resultType="java.lang.Long">
+        select training_project_id
+        from tp_student_project_record
+        where account_id = #{accountId}
+    </select>
+
+    <insert id="batchInsert">
+        insert into tp_student_project_record
+        (id, training_project_id, finished, account_id, finish_date, site_id)
+        values
+        <foreach collection="list" item="i" separator=",">
+            (#{i.id}, #{i.trainingProjectId}, #{i.finished}, #{i.accountId}, #{i.finishDate}, #{i.siteId})
+        </foreach>
+    </insert>
+
+
+    <select id="getTrainingProjectNumTrainingProjectOrgGroup" resultType="java.lang.Integer">
+        SELECT count(distinct(tpr.training_project_id)) FROM tp_student_project_record tpr LEFT JOIN training_project tp
+        ON tpr.training_project_id=tp.id
+        where tp.status=1 AND tp.deleted=0
+        and <![CDATA[ tp.start_time <= #{startDate} ]]>
+        and <![CDATA[ tp.end_time >= #{endDate} ]]>
+        and tpr.accoung_id in
+        <foreach collection="accountIdList" item="accountId" index="index" open="(" close=")" separator=",">
+            #{accountId}
+        </foreach>
+    </select>
+
+    <select id="projectIsFinish" resultType="java.lang.Integer">
+        SELECT count(distinct (training_project_id))
+        FROM tp_student_project_record
+        where training_project_id = #{projectId}
+          and account_id = #{accountId}
+          and site_id = #{siteId}
+
+    </select>
+
+    <select id="getTpStudentProjectRecordByTpIdAndTime" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from tp_student_project_record as tb where training_project_id=#{tpId}
+        <if test="startTime!=null and startTime!='' and endTime!=null and endTime!=''">
+            AND (<![CDATA[ DATE_FORMAT(finish_date,'%Y-%m-%d')<=DATE_FORMAT(#{endTime,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            AND <![CDATA[ DATE_FORMAT(finish_date,'%Y-%m-%d')>=DATE_FORMAT(#{startTime,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            )
+        </if>
+    </select>
+
+    <select id="getFinisheNum" resultType="java.lang.Integer">
+        select ifnull(count(*), 0)
+        from tp_student_project_record
+        where finished = 1
+        and <![CDATA[ DATE_FORMAT(finish_date, '%Y-%m-%d') >= DATE_FORMAT(#{startDate}, '%Y-%m-%d') ]]>
+        and <![CDATA[ DATE_FORMAT(finish_date, '%Y-%m-%d') <= DATE_FORMAT(#{endDate}, '%Y-%m-%d') ]]>
+        and training_project_id in
+        <foreach collection="ids" index="index" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </select>
+
+    <select id="getProjectsStatus" resultType="com.yizhi.training.application.vo.api.TpStudentProjectRecordVoVO">
+        SELECT
+        a.id as trainingProjectId,
+        a.name as trainingProjectName,
+        a.start_time,
+        a.end_time,
+        IFNULL( b.finished, 2 ) AS state,
+        b.finish_date,
+        b.account_id
+        FROM
+        training_project a
+        LEFT JOIN tp_student_project_record b ON a.id = b.training_project_id and b.finished = 1
+        AND b.account_id = #{accountId}
+        WHERE
+        1 = 1
+        <if test="projectIds!=null and projectIds.size()>0">
+            AND a.id in
+            <foreach item="item" index="index" collection="projectIds" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+    </select>
+
+    <select id="getProjectsStudyingNum" resultType="java.lang.Integer">
+        SELECT
+        COUNT( 1 )
+        FROM
+        (
+        SELECT
+        id
+        FROM
+        tp_student_activity_record
+        WHERE
+        relation_id IN ( SELECT relation_id FROM tp_plan_activity WHERE company_id = #{companyId} AND site_id =
+        #{siteId}
+        <if test="projectIds!=null and projectIds.size()>0">
+            AND training_project_id in
+            <foreach item="item" index="index" collection="projectIds" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        AND deleted = 0 )
+        GROUP BY
+        account_id
+        ) a
+    </select>
+
+    <select id="getProjectsStudyingRecords"
+            resultType="com.yizhi.training.application.vo.api.TpStudentProjectRecordVoVO">
+        SELECT
+        c.id AS trainingProjectId,
+        c.`name` AS trainingProjectName,
+        c.start_time,
+        c.end_time,
+        IFNULL( d.finished, 2 ) AS state,
+        d.finish_date
+        FROM
+        tp_plan_activity a
+        LEFT JOIN tp_student_activity_record b ON a.relation_id = b.relation_id
+        AND a.type = 5
+        AND b.type = 5
+        AND b.account_id = #{accountId}
+        LEFT JOIN training_project c ON a.training_project_id = c.id
+        LEFT JOIN tp_student_project_record d ON d.training_project_id = c.id
+        AND d.account_id = #{accountId}
+        WHERE
+        a.relation_id = b.relation_id
+        AND a.type = 5
+        AND b.type = 5
+        <if test="projectIds!=null and projectIds.size()>0">
+            AND a.training_project_id IN
+            <foreach item="item" index="index" collection="projectIds" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        </if>
+        AND b.account_id = #{accountId}
+        GROUP BY
+        c.id
+        ORDER BY
+        c.create_time
+    </select>
+
+
+    <select id="getFinshIdsByIds" resultType="java.lang.Long">
+        SELECT training_project_id FROM tp_student_project_record c
+        where
+        c.account_id = #{accountId}
+        and c.site_id = #{siteId}
+        <if test="ids != null and ids.size > 0">
+            and c.training_project_id in (<foreach collection="ids" item="item" separator=",">#{item}</foreach>)
+        </if>
+
+    </select>
+
+    <select id="getFinishRecords" resultMap="BaseResultMap">
+        select training_project_id as tb_training_project_id
+        from tp_student_project_record
+        where finished = 1
+          and site_id = #{siteId}
+          and <![CDATA[ DATE_FORMAT(finish_date, '%Y-%m-%d') >= DATE_FORMAT(#{startDate}, '%Y-%m-%d') ]]>
+        and <![CDATA[ DATE_FORMAT(finish_date, '%Y-%m-%d') <= DATE_FORMAT(#{endDate}, '%Y-%m-%d')
+        ]]>
+    </select>
+    <select id="getPageList" resultType="com.yizhi.training.application.domain.TpStudentProjectRecord">
+        SELECT * from tp_student_project_record r
+        where r.training_project_id in
+        <foreach collection="projectIds" item="tpId" open="(" close=")" separator=",">
+            #{tpId}
+        </foreach>
+        <if test="accountIds != null and accountIds.size > 0">
+            and r.account_id in
+            <foreach collection="accountIds" item="accountId" open="(" close=")" separator=",">
+                #{accountId}
+            </foreach>
+        </if>
+        and r.site_id = #{siteId}
+        <if test="passedStartTime != null">
+            and r.finish_date &gt;= #{passedStartTime}
+        </if>
+        <if test="passedEndTime != null">
+            and r.finish_date &lt;= #{passedEndTime}
+        </if>
+        ORDER BY r.finish_date ASC, r.id ASC
+    </select>
+    <select id="getTpStudentProjectRecordBySiteIdsAndTime"
+            resultType="com.yizhi.training.application.vo.domain.TpStudentProjectRecordVo">
+        select
+        tb.id AS tb_id,
+        tb.training_project_id AS trainingProjectId,
+        tb.finished AS finished,
+        tb.account_id AS accountId,
+        tb.finish_date AS finishDate,
+        tb.site_id AS siteId
+        from tp_student_project_record as tb
+        where site_id in
+        <foreach collection="siteIds" open="(" close=")" item="siteId" separator=",">
+            #{siteId}
+        </foreach>
+        <if test="startDate!=null and startDate!='' and endDate!=null and endDate!=''">
+            AND (<![CDATA[ DATE_FORMAT(finish_date,'%Y-%m-%d')<=DATE_FORMAT(#{endDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            AND <![CDATA[ DATE_FORMAT(finish_date,'%Y-%m-%d')>=DATE_FORMAT(#{startDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            )
+        </if>
+    </select>
+    <select id="getFinishedTpV2" resultType="com.yizhi.training.application.v2.MyTpFinishedVO">
+        select * from (
+        SELECT
+        tr.training_project_id AS tpId,
+        min( tr.finish_date ) AS finishedAt,
+        "0" AS tpType,
+        tp.NAME AS name,
+        tp.logo_img as logo,
+        tp.start_time AS startAt,
+        tp.end_time AS endAt ,
+        tp.enable_enroll,
+        tre.pay_type
+        FROM
+        tp_student_project_record tr
+        LEFT JOIN training_project tp ON tp.id = tr.training_project_id
+        LEFT JOIN tp_authorization_range tb on tb.biz_id = tp.id and tb.deleted = 0
+        LEFT JOIN tp_pro_mapping tpm ON tpm.training_project_id = tr.training_project_id
+        and tpm.site_id = #{siteId}
+        and tpm.deleted = 0
+        LEFT JOIN tr_enroll tre on tp.id=tre.training_project_id
+        WHERE
+        tr.site_id = #{siteId}
+        AND tr.account_id = #{accountId}
+        and tp.site_id = #{siteId}
+        AND tpm.id IS NULL
+        and (tp.visible_range = 1 or (tb.relation_id in
+        <foreach collection="relationIds" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+        ))
+        AND tr.finished = 1
+        AND tp.deleted = 0
+        AND tp.site_id = #{siteId}
+        and tp.status = 1
+        GROUP BY
+        tr.training_project_id
+
+        union
+        -- 项目PRO关联的项目有已完成的，则项目PRO为已完成
+        SELECT
+        tpp.id AS tpId,
+        min( tr.finish_date ) AS finishedAt,
+        "1" AS tpType,
+        tpp.tp_pro_name AS NAME,
+        tpp.tp_pro_logo as logo,
+        null AS startAt,
+        null AS endAt,
+        0,
+        0
+        FROM
+        training_project_pro tpp
+        LEFT JOIN tp_pro_mapping tpm
+        ON tpm.tp_pro_id = tpp.id
+        AND tpm.deleted = 0
+        and tpm.site_id = #{siteId}
+        and tpp.site_id = #{siteId}
+        LEFT JOIN tp_student_project_record tr
+        ON tr.account_id = #{accountId}
+        and tr.site_id = #{siteId}
+        AND tr.training_project_id = tpm.training_project_id
+        LEFT JOIN training_project tp ON tp.id = tpm.training_project_id and tp.site_id = #{siteId}
+        LEFT JOIN tp_authorization_range tb on tb.biz_id = tp.id and tb.deleted = 0 and tb.site_id = #{siteId}
+        WHERE
+        tr.site_id = #{siteId}
+        AND tr.account_id = #{accountId}
+        and tpp.deleted = 0
+        and tp.status = 1
+        AND tr.finished = 1
+        AND (tp.visible_range = 1 or (tb.relation_id in
+        <foreach collection="relationIds" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+        ))
+        GROUP BY
+        tpp.id
+        ) a order by finishedAt desc
+    </select>
+    <select id="selectFinishedTpAndProId" resultType="java.lang.Long">
+        select distinct tpm.tp_pro_id
+        from tp_student_project_record tpr
+                 left join tp_pro_mapping tpm
+                           on
+                                       tpm.training_project_id = tpr.training_project_id
+                                   and tpm.site_id = #{siteId}
+                                   and tpr.`account_id` = #{accountId}
+                                   and tpr.site_id = #{siteId}
+                                   and tpr.finished = 1
+        where tpm.deleted = 0
+        union
+        select distinct training_project_id
+        from tp_student_project_record tpr
+        where tpr.`account_id` = #{accountId}
+          and tpr.site_id = #{siteId}
+          and tpr.finished = 1
+    </select>
+    <select id="getStartViewAnUnFinished" resultType="com.yizhi.training.application.v2.MyTpUnFinishedVO">
+        select tr.training_project_id as tpId ,
+        max(tr.time) as studyAndEnorll,
+        tp.start_time as startAt,
+        tp.end_time as endAt,
+        tp.name as name,
+        tp.logo_img as logo,
+        "0" as tpType,
+        "1" as startType,
+        tp.enable_enroll
+        from tp_view_record tr
+        left join training_project tp ON tp.id = tr.training_project_id and tp.site_id = #{siteId}
+        LEFT JOIN tp_pro_mapping tpm ON tpm.training_project_id = tp.id and tpm.site_id = #{siteId} and tpm.deleted = 0
+        left join tp_student_project_record sr
+        on sr.training_project_id = tr.training_project_id
+        and tr.account_id = #{accountId}
+        and sr.account_id = #{accountId}
+        and tr.site_id = #{siteId}
+        and sr.site_id = #{siteId}
+        and sr.`finished` = 1
+        where
+        sr.id is null
+        and tpm.id is null
+        and tr.account_id = #{accountId}
+        and tr.site_id = #{siteId}
+        and tp.visible_range = 1
+        and tp.site_id = #{siteId}
+        and tp.deleted = 0
+        and tp.status = 1
+        group by tr.training_project_id
+        union
+        select tr.training_project_id as tpId ,
+        max(tr.time) as studyAndEnorll,
+        tp.start_time as startAt,
+        tp.end_time as endAt,
+        tp.name as name,
+        tp.logo_img as logo,
+        "0" as tpType,
+        "1" as startType,
+        tp.enable_enroll
+        from tp_view_record tr
+        LEFT JOIN tp_authorization_range tb on tb.biz_id = tr.training_project_id and tb.deleted = 0 and tb.site_id =
+        #{siteId}
+        left join training_project tp ON tp.id = tr.training_project_id and tp.site_id = #{siteId}
+        LEFT JOIN tp_pro_mapping tpm ON tpm.training_project_id = tp.id
+        and tpm.site_id = #{siteId}
+        and tpm.deleted = 0
+        left join tp_student_project_record sr
+        on sr.training_project_id = tr.training_project_id
+        and tr.account_id = #{accountId}
+        and sr.account_id = #{accountId}
+        and tr.site_id = #{siteId}
+        and sr.site_id = #{siteId}
+        and sr.`finished` = 1
+        where
+        sr.id is null
+        and tpm.id is null
+        and tr.account_id = #{accountId}
+        and tr.site_id = #{siteId}
+        and (tp.visible_range = 0 and
+        (tb.relation_id in
+        <foreach collection="relationIds" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+        )
+        )
+        and tp.site_id = #{siteId}
+        and tp.deleted = 0
+        and tp.status = 1
+        group by tr.training_project_id
+    </select>
+    <select id="getEnrollAnUnFinished" resultType="com.yizhi.training.application.v2.MyTpUnFinishedVO">
+        select
+        tr.training_project_id as tpId ,
+        max(tr.apply_time) as studyAndEnorll,
+        tp.start_time as startAt,
+        tp.end_time as endAt,
+        tp.name as name,
+        tp.logo_img as logo,
+        "1" as startType,
+        "0" as tpType,
+        tp.enable_enroll
+        from tr_enroll_record tr
+        LEFT JOIN tp_authorization_range tb on tb.biz_id = tr.training_project_id and tb.deleted = 0 and tb.site_id =
+        #{siteId}
+        left join training_project tp ON tp.id = tr.training_project_id and tp.site_id = #{siteId}
+        LEFT JOIN tp_pro_mapping tpm ON tpm.training_project_id = tp.id
+        and tpm.site_id = #{siteId}
+        and tpm.deleted = 0
+        left join tp_student_project_record sr
+        on sr.training_project_id = tr.training_project_id
+        and tr.account_id = #{accountId}
+        and sr.account_id = #{accountId}
+        and sr.site_id = #{siteId}
+        and sr.`finished` = 1
+        where
+        sr.id is null
+        and tpm.id is null
+        and tr.account_id = #{accountId}
+        and (tp.visible_range = 1 or
+        (tb.relation_id in
+        <foreach collection="relationIds" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+        )
+        )
+        and tp.site_id = #{siteId}
+        and tp.deleted = 0
+        and tp.status = 1
+        group by tr.training_project_id
+    </select>
+    <select id="getProAnUnFinished" resultType="com.yizhi.training.application.v2.MyTpUnFinishedVO">
+        SELECT
+        tpp.id AS tpId,
+        tpp.tp_pro_name as name,
+        tpp.tp_pro_logo as logo,
+        min( tp.start_time ) AS startAt,
+        max(tp.end_time) as endAt,
+        "1" as tpType
+        FROM
+        training_project_pro tpp
+        LEFT JOIN tp_pro_mapping tpm
+        ON tpm.tp_pro_id = tpp.id
+        AND tpm.deleted = 0
+        and tpm.site_id = #{siteId}
+        and tpp.site_id = #{siteId}
+        LEFT JOIN tp_student_project_record tr
+        ON tr.account_id = #{accountId}
+        and tr.site_id = #{siteId}
+        AND tr.training_project_id = tpm.training_project_id
+        AND tr.finished = 1
+        LEFT JOIN training_project tp ON tp.id = tpm.training_project_id and tp.site_id = #{siteId}
+        LEFT JOIN tp_authorization_range tb on tb.biz_id = tp.id and tb.deleted = 0 and tb.site_id = #{siteId}
+        WHERE
+        tr.id is null
+        and tpp.deleted = 0
+        and tpm.deleted = 0
+        and tp.status = 1
+        AND (tp.visible_range = 1 or (tb.relation_id in
+        <foreach collection="relationIds" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+        ))
+        GROUP BY
+        tpp.id
+    </select>
+    <select id="getFinishedAccountIds" resultType="java.lang.Long">
+        select distinct account_id
+        from tp_student_project_record
+        where training_project_id = #{tpId}
+          and company_id = #{companyId}
+          and site_id = #{siteId}
+          and finished = 1
+    </select>
+    <select id="getFinishedAccountCount" resultType="java.lang.Integer">
+        select IFNULL(count(distinct account_id), 0)
+        from tp_student_project_record
+        where training_project_id = #{tpId}
+          and company_id = #{companyId}
+          and site_id = #{siteId}
+          and finished = 1
+    </select>
+
+    <select id="getFinishedRecordsListGroupByAccountId"
+            resultType="com.yizhi.core.application.vo.BaseViewRecordVO">
+        SELECT r.account_id
+             , r.training_project_id as relationId
+             , MIN(r.finish_date)    as finishedTime
+
+        from tp_student_project_record r
+        where r.company_id = #{companyId}
+          and r.site_id = #{siteId}
+          and r.finished = 1
+          and r.training_project_id = #{trainProjectId}
+
+        GROUP BY r.training_project_id, r.account_id
+    </select>
+
+
+</mapper>

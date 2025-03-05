@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.v2.mapper.TpPlanConditionPreMapperV2">
+
+    <update id="deleteBatchByTpPlanId">
+        UPDATE `tp_plan_condition_pre`
+        SET `deleted` = 1
+        WHERE `plan_id` IN
+        <foreach collection="tpPlanIds" item="tpPlanId" open="(" close=")" separator=",">
+            #{tpPlanId}
+        </foreach>
+    </update>
+
+    <select id="getPrePlans" resultType="com.yizhi.training.application.domain.TpPlan">
+        SELECT plan.`id`, plan.`training_project_id`, plan.`name`
+        FROM `tp_plan_condition_pre` pre
+                 LEFT JOIN `tp_plan` plan
+                           ON pre.`pre_plan_id` = plan.`id`
+        WHERE pre.`plan_id` = #{tpPlanId}
+          and pre.deleted = 0
+    </select>
+</mapper>

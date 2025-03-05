@@ -1,0 +1,809 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.StatisticsTrainingProjectLearnMapper">
+
+    <select id="getCharGroup" resultType="com.yizhi.training.application.vo.manage.TrainingProjectDataChartsVo">
+        SELECT
+        DATE_FORMAT(record_create_time,'%Y-%m-%d') AS value,
+        sum(finished) AS totalFinish,
+        count(finished) AS totalJoin
+        FROM
+        statistics_training_project_learn stpl
+        WHERE
+        stpl.training_project_id IN (
+        SELECT
+        training_project_id
+        FROM
+        statistics_training_project_metadata_training_project_group_find stp
+        WHERE 1=1
+        <if test="companyId!=null">
+            and company_id = #{companyId}
+        </if>
+        <if test="siteId!=null">
+            and site_id=#{siteId}
+        </if>
+        <if test="orgIds!=null and orgIds.size()>0">
+            and org_id in
+            <foreach collection="orgIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+
+        <if test="startDate!=null and startDate!='' and endDate!=null and endDate!=''">
+            AND (
+            <![CDATA[ DATE_FORMAT(training_project_start_time,'%Y-%m-%d')<=DATE_FORMAT(#{endDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            AND
+            <![CDATA[ DATE_FORMAT(training_project_end_time,'%Y-%m-%d')>=DATE_FORMAT(#{startDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            )
+        </if>
+        )
+        <if test="startDate!=null and startDate!='' and endDate!=null and endDate!=''">
+            AND (
+            <![CDATA[ DATE_FORMAT(record_create_time,'%Y-%m-%d')<=DATE_FORMAT(#{endDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            AND
+            <![CDATA[ DATE_FORMAT(record_create_time,'%Y-%m-%d')>=DATE_FORMAT(#{startDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            )
+        </if>
+
+        GROUP BY
+        DATE_FORMAT(record_create_time,'%Y-%m-%d')
+
+    </select>
+
+
+    <select id="getCharGroupProjectNum" resultType="java.lang.Integer">
+
+
+        SELECT COUNT(1) FROM `statistics_training_project_metadata_training_project_group_find` WHERE
+        (
+        <![CDATA[DATE_FORMAT(training_project_start_time,'%Y-%m-%d')<=DATE_FORMAT(#{value,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+        AND
+        <![CDATA[DATE_FORMAT(training_project_end_time,'%Y-%m-%d')>=DATE_FORMAT(#{value,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+        )
+
+        <if test="companyId!=null">
+            and company_id = #{companyId}
+        </if>
+        <if test="siteId!=null">
+            and site_id=#{siteId}
+        </if>
+        <if test="orgIds!=null and orgIds.size()>0">
+            and org_id in
+            <foreach collection="orgIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+
+
+    </select>
+
+
+    <select id="listTrainingProjectIds" resultType="java.lang.Long">
+
+        select training_project_id from statistics_training_project_metadata_training_project_group_find WHERE 1=1
+        <if test="companyId!=null">
+            AND company_id = #{companyId}
+        </if>
+        <if test="siteId!=null">
+            AND site_id = #{siteId}
+        </if>
+        <if test="orgIds!=null and orgIds.size()>0">
+            and org_id in
+            <foreach collection="orgIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="kwd!=null">
+            AND training_project_name LIKE CONCAT('%',#{kwd}, '%')
+        </if>
+        <if test="startDate!=null and startDate!='' and endDate!=null and endDate!=''">
+            AND (
+            <![CDATA[ DATE_FORMAT(training_project_start_time,'%Y-%m-%d')<=DATE_FORMAT(#{endDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            AND
+            <![CDATA[ DATE_FORMAT(training_project_end_time,'%Y-%m-%d')>=DATE_FORMAT(#{startDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            )
+        </if>
+
+        order by training_project_create_time desc,id asc
+
+    </select>
+
+
+    <select id="trainingProjectGroup"
+            resultType="com.yizhi.training.application.vo.manage.ReportStudyTrainingProjectVo">
+
+        SELECT aaa.id,aaa.name,aaa.startTime,aaa.endTime,aaa.totalAsk,
+        bbb.totalIn,bbb.totalFinish,
+        ROUND(IFNULL(bbb.totalFinish/bbb.totalIn*100,0),2) AS avgFinish
+        FROM
+
+        (SELECT -- 应该参加的人数
+        training_project_id AS id,
+        training_project_name AS NAME,
+        training_project_start_time AS startTime,
+        training_project_end_time AS endTime,
+        COUNT(1) AS totalAsk
+        FROM
+        statistics_training_project WHERE 1=1
+        <if test="listTrainingProjectIds!=null and listTrainingProjectIds.size()>0">
+            AND training_project_id IN
+            <foreach collection="listTrainingProjectIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        GROUP BY training_project_id
+        ) AS aaa
+
+        LEFT JOIN (
+        SELECT a.training_project_id,
+        COUNT(1) AS totalIn, -- 实际参加人数从应该参加人数进行筛选
+        SUM(finished) AS totalFinish -- 实际完成人数从应该参加人数进行筛选
+        FROM
+        (SELECT account_id,training_project_id,MAX(finished) AS finished FROM statistics_training_project_learn
+        where 1=1
+        <if test="listTrainingProjectIds!=null and listTrainingProjectIds.size()>0">
+            AND training_project_id IN
+            <foreach collection="listTrainingProjectIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+
+        GROUP BY account_id,training_project_id
+
+
+        ) a
+        INNER JOIN `statistics_training_project` b
+        ON a.training_project_id = b.training_project_id AND a.account_id = b.account_id
+        GROUP BY a.training_project_id
+        ) AS bbb ON aaa.id=bbb.training_project_id
+
+    </select>
+
+
+    <select id="trainingProjectGroupViewExport1"
+            resultType="com.yizhi.training.application.vo.manage.TrainingProjectGroupViewExportVO1">
+
+        SELECT a.training_project_name     AS projectName,
+               a.NAME                      AS accountName,
+               a.fullname                  AS accountFullName,
+               a.org_name                  AS orgName,
+               min(b.first_learn_time)     AS startTime,
+               max(b.finish_time)          AS endTime, -- 如果这个人没有完成这个培训项目那就没有完成时间
+               IFNULL(max(learn_point), 0) AS point,
+               IFNULL(max(finished), - 1)  AS studeyState,
+               max(account_state)          AS accountState
+        FROM statistics_training_project a
+                 LEFT JOIN statistics_training_project_learn b
+                           ON a.training_project_id = b.training_project_id AND a.account_id = b.account_id
+        WHERE a.training_project_id = #{projectId}
+
+        GROUP BY a.account_id
+    </select>
+
+
+    <select id="trainingProjectGroupViewExportNum1" resultType="java.lang.Integer">
+
+        select count(1)
+        from (SELECT a.training_project_name     AS projectName,
+                     a.NAME                      AS accountName,
+                     a.fullname                  AS accountFullName,
+                     a.org_name                  AS orgName,
+                     min(b.first_learn_time)     AS startTime,
+                     max(b.finish_time)          AS endTime,
+                     IFNULL(max(learn_point), 0) AS point,
+                     IFNULL(max(finished), - 1)  AS studeyState,
+                     max(account_state)          AS accountState
+              FROM statistics_training_project a
+                       LEFT JOIN statistics_training_project_learn b
+                                 ON a.training_project_id = b.training_project_id AND a.account_id = b.account_id
+              WHERE a.training_project_id = #{projectId}
+
+              GROUP BY a.account_id) as num
+    </select>
+
+
+    <select id="trainingProjectGroupViewExport2"
+            resultType="com.yizhi.training.application.vo.manage.TrainingProjectGroupViewExportVO2">
+
+        SELECT *
+        FROM (SELECT tp.id                                      AS trainingProjectId,
+                     tp.NAME                                    AS projectName,
+                     tpa.tp_plan_id                             AS planId,
+                     tplan.NAME                                 AS planName,
+                     CASE TYPE
+                         WHEN 0 THEN '课程'
+                         WHEN 1 THEN '考试'
+                         WHEN 2 THEN '调研'
+                         WHEN 3 THEN '直播'
+                         WHEN 4 THEN '投票'
+                         WHEN 5 THEN '作业'
+                         WHEN 6 THEN '证书'
+                         WHEN 7 THEN '外部链接'
+                         WHEN 8 THEN '报名'
+                         WHEN 9 THEN '签到'
+                         WHEN 10 THEN '线下课程'
+                         ELSE '其它' END                        AS activityType,
+                     relation_id                                AS activityId,
+                     tpa.NAME                                   AS activityName,
+                     (SELECT COUNT(id)
+                      FROM statistics_training_project
+                      WHERE training_project_id = #{projectId}) AS totalAskAccount
+              FROM tp_plan_activity tpa
+                       LEFT JOIN training_project tp ON tpa.training_project_id = tp.id
+                       LEFT JOIN tp_plan tplan ON tpa.tp_plan_id = tplan.id
+              WHERE tpa.training_project_id = #{projectId}) a
+                 LEFT JOIN (SELECT relation_id,
+                                   COUNT(finished)                                            AS totalJoinAccount,
+                                   SUM(finished)                                              AS totalFinishAccount,
+                                   ROUND(SUM(finished) / IFNULL(COUNT(finished), 1) * 100, 2) AS avgFinish
+                            FROM (SELECT account_id,
+                                         relation_id,
+                                         MAX(finished) AS finished
+                                  FROM tp_student_activity_record
+                                  WHERE 1 = 1
+                                    AND account_id IN (SELECT account_id
+                                                       FROM `statistics_training_project`
+                                                       WHERE training_project_id = #{projectId})
+                                    AND relation_id IN (SELECT relation_id
+                                                        FROM `tp_plan_activity`
+                                                        WHERE training_project_id = #{projectId})
+                                  GROUP BY account_id,
+                                           relation_id) AS b
+                            GROUP BY relation_id) AS c ON a.activityId = c.relation_id
+    </select>
+
+
+    <select id="trainingProjectGroupViewExportNum2" resultType="java.lang.Integer">
+
+        SELECT count(*)
+        FROM (SELECT tp.id                                      AS trainingProjectId,
+                     tp.NAME                                    AS projectName,
+                     tpa.tp_plan_id                             AS planId,
+                     tplan.NAME                                 AS planName,
+                     CASE TYPE
+                         WHEN 0 THEN '课程'
+                         WHEN 1 THEN '考试'
+                         WHEN 2 THEN '调研'
+                         WHEN 3 THEN '直播'
+                         WHEN 4 THEN '投票'
+                         WHEN 5 THEN '作业'
+                         WHEN 6 THEN '证书'
+                         WHEN 7 THEN '外部链接'
+                         WHEN 8 THEN '报名'
+                         WHEN 9 THEN '签到'
+                         WHEN 10 THEN '线下课程'
+                         ELSE '其它' END                        AS activityType,
+                     relation_id                                AS activityId,
+                     tpa.NAME                                   AS activityName,
+                     (SELECT COUNT(id)
+                      FROM statistics_training_project
+                      WHERE training_project_id = #{projectId}) AS totalAskAccount
+              FROM tp_plan_activity tpa
+                       LEFT JOIN training_project tp ON tpa.training_project_id = tp.id
+                       LEFT JOIN tp_plan tplan ON tpa.tp_plan_id = tplan.id
+              WHERE tpa.training_project_id = #{projectId}) a
+                 LEFT JOIN (SELECT relation_id,
+                                   COUNT(finished)                                            AS totalJoinAccount,
+                                   SUM(finished)                                              AS totalFinishAccount,
+                                   ROUND(SUM(finished) / IFNULL(COUNT(finished), 1) * 100, 2) AS avgFinish
+                            FROM (SELECT account_id,
+                                         relation_id,
+                                         MAX(finished) AS finished
+                                  FROM tp_student_activity_record
+                                  WHERE 1 = 1
+                                    AND account_id IN (SELECT account_id
+                                                       FROM `statistics_training_project`
+                                                       WHERE training_project_id = #{projectId})
+                                    AND relation_id IN (SELECT relation_id
+                                                        FROM `tp_plan_activity`
+                                                        WHERE training_project_id = #{projectId})
+                                  GROUP BY account_id,
+                                           relation_id) AS b
+                            GROUP BY relation_id) AS c ON a.activityId = c.relation_id
+
+
+    </select>
+
+
+    <select id="trainingProjectGroupViewExport3"
+            resultType="com.yizhi.training.application.vo.manage.TrainingProjectGroupViewExportVO3">
+
+        SELECT
+        a.account_id,
+        a. NAME AS accountName,
+        a.fullname AS accountFullName,
+        a.training_project_name AS projectName,
+        b.planName AS planName,
+        b.activityName,
+        CASE b.type WHEN 0 THEN '课程' WHEN 1 THEN '考试' WHEN 2 THEN '调研' WHEN 3 THEN '直播' WHEN 4 THEN '投票' WHEN
+        5 THEN '作业' WHEN 6 THEN '证书' WHEN 7 THEN '外部链接' WHEN 8 THEN '报名' WHEN 9 THEN '签到' WHEN 10 THEN
+        '线下课程' ELSE '其它' END AS activityType,
+        e.start_time,
+        e.firstFinishedTime,
+        IFNULL(e.finished ,- 1) AS state,
+        a.account_state AS accountState,
+        a.org_name AS orgName
+        FROM
+        (
+        SELECT
+        account_id,
+        training_project_id,
+        training_project_name,
+        NAME,
+        fullname,
+        org_name,
+        account_state
+        FROM
+        statistics_training_project
+        WHERE
+        training_project_id = #{projectId}
+        <if test="accountIds!=null and accountIds.size()>0">
+            AND account_id IN
+            <foreach collection="accountIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+
+        ) a
+        LEFT JOIN (
+        SELECT
+        tp.id AS trainingProjectId,
+        tp. NAME AS projectName,
+        tpa.tp_plan_id AS planId,
+        tplan. NAME AS planName,
+        TYPE,
+        relation_id AS activityId,
+        tpa. NAME AS activityName
+        FROM
+        tp_plan_activity tpa
+        LEFT JOIN training_project tp ON tpa.training_project_id = tp.id
+        LEFT JOIN tp_plan tplan ON tpa.tp_plan_id = tplan.id
+        WHERE
+        tpa.deleted=0 and -- 计划没有被删除的
+        tpa.training_project_id = #{projectId}
+        ) b ON a.training_project_id = b.trainingProjectId
+        LEFT JOIN (
+        SELECT
+        c.account_id,
+        c.relation_id,
+        finished,
+        start_time,
+        firstFinishedTime
+        FROM
+        (
+        SELECT -- 参加的活动
+        account_id,
+        relation_id,
+        MAX(finished) AS finished,
+        MIN(finish_date) AS start_time
+        FROM
+        tp_student_activity_record
+        WHERE 1=1
+
+        <if test="accountIds!=null and accountIds.size()>0">
+            AND account_id IN
+            <foreach collection="accountIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+
+        AND relation_id IN (SELECT relation_id FROM tp_plan_activity WHERE training_project_id=#{projectId})
+
+        GROUP BY
+        account_id,
+        relation_id
+        ) c
+        LEFT JOIN (
+        SELECT -- 已经完成的活动
+        account_id,
+        relation_id,
+        MIN(finish_date) AS firstFinishedTime
+        FROM
+        tp_student_activity_record
+        WHERE
+        finished = 1
+        <if test="accountIds!=null and accountIds.size()>0">
+            AND account_id IN
+            <foreach collection="accountIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        AND relation_id IN (SELECT relation_id FROM tp_plan_activity WHERE training_project_id=#{projectId})
+        GROUP BY
+        account_id,
+        relation_id
+        ) d ON (
+        c.account_id = d.account_id
+        AND c.relation_id = d.relation_id
+        )
+        ) e ON (
+        a.account_id = e.account_id
+        AND b.activityId = e.relation_id
+        )
+
+    </select>
+
+
+    <!--  <select id="trainingProjectGroupViewExportNum3" resultType="java.lang.Integer">
+
+     select count(*) from (
+
+     SELECT
+                  a.account_id,
+                  a. NAME AS accountName,
+                  a.fullname AS accountFullName,
+                  a.training_project_name AS projectName,
+                  b.planName AS planName,
+                  case b.type when 0 then '课程' when 1 then '考试' when 2 then '调研'  when 3 then '直播' when 4 then '投票' when 5 then '作业' when 6 then '证书' when 7 then '外部链接' when 8 then '报名' when 9 then '签到' else '其它' END  AS activityType,
+                  e.start_time,
+                  e.firstFinishedTime,
+                  IFNULL(e.finished ,- 1) AS state,
+                  a.account_state AS accountState,
+                  a.org_name AS orgName
+              FROM
+                  (
+                      SELECT
+                          account_id,
+                          training_project_id,
+                          training_project_name,
+                          NAME,
+                          fullname,
+                          org_name,
+                          account_state
+                      FROM
+                          statistics_training_project
+                      WHERE
+                          training_project_id = #{projectId}
+                  ) a
+              LEFT JOIN (
+                  SELECT
+                      tp.id AS trainingProjectId,
+                      tp. NAME AS projectName,
+                      tpa.tp_plan_id AS planId,
+                      tplan. NAME AS planName,
+                      type,
+                      relation_id AS activityId,
+                      tpa. NAME AS activityName
+                  FROM
+                      tp_plan_activity tpa
+                  LEFT JOIN training_project tp ON tpa.training_project_id = tp.id
+                  LEFT JOIN tp_plan tplan ON tpa.tp_plan_id = tplan.id
+                  WHERE
+                      tpa.training_project_id = #{projectId}
+              ) b ON a.training_project_id = b.trainingProjectId
+              LEFT JOIN (
+                  SELECT
+                      c.account_id,
+                      c.relation_id,
+                      finished,
+                      start_time,
+                      firstFinishedTime
+                  FROM
+                      (
+                          SELECT
+                              account_id,
+                              relation_id,
+                              MAX(finished) AS finished,
+                              min(finish_date) AS start_time
+                          FROM
+                              tp_student_activity_record
+                          where 1=1   AND (<![CDATA[ DATE_FORMAT(finish_date,'%Y-%m-%d')>=DATE_FORMAT(#{startDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+                                      AND <![CDATA[ DATE_FORMAT(finish_date,'%Y-%m-%d')<=DATE_FORMAT(#{endDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>)
+                          GROUP BY
+                              account_id,
+                              relation_id
+                      ) c
+                  LEFT JOIN (
+                      SELECT
+                          account_id,
+                          relation_id,
+                          min(finish_date) AS firstFinishedTime
+                      FROM
+                          tp_student_activity_record
+                      WHERE
+                          finished = 1 AND (<![CDATA[ DATE_FORMAT(finish_date,'%Y-%m-%d')>=DATE_FORMAT(#{startDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+                                       AND <![CDATA[ DATE_FORMAT(finish_date,'%Y-%m-%d')<=DATE_FORMAT(#{endDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>)
+                      GROUP BY
+                          account_id,
+                          relation_id
+                  ) d ON (
+                      c.account_id = d.account_id
+                      AND c.relation_id = d.relation_id
+                  )
+              ) e ON (
+                  a.account_id = e.account_id
+                  AND b.activityId = e.relation_id
+              )
+
+     ) as a
+     </select>
+      -->
+
+
+    <select id="trainingProjectGroupView"
+            resultType="com.yizhi.training.application.vo.manage.TrainingProjectDataChartsVo">
+        SELECT ab.relation_id, ab.name AS VALUE,IFNULL(totalJoin,0) AS totalJoin,IFNULL(totalFinish,0) AS totalFinish
+        FROM (
+
+            SELECT DISTINCT (relation_id), NAME FROM `tp_plan_activity` WHERE training_project_id=#{projectId}
+
+            ) AS ab
+            LEFT JOIN
+            (SELECT relation_id, COUNT (finished) AS totalJoin, SUM (finished) AS totalFinish FROM
+            (
+            SELECT a.relation_id, MAX (finished) AS finished, a.account_id FROM tp_student_activity_record a WHERE relation_id IN (SELECT DISTINCT (relation_id) FROM `tp_plan_activity` WHERE training_project_id=#{projectId})
+            GROUP BY a.`relation_id`, a.`account_id`
+            HAVING account_id IN (SELECT account_id FROM `statistics_training_project` WHERE training_project_id=#{projectId})
+            ) AS aa
+            GROUP BY relation_id
+            ) aaa
+        ON ab.relation_id=aaa.relation_id
+
+    </select>
+
+
+    <select id="selectLearnOnAccountsTotal" resultType="java.lang.Integer">
+        SELECT COUNT(a.account_id)
+        FROM statistics_training_project_metadata_account_group_find a
+        WHERE 1=1
+        <if test="paramMap.companyId!=null">
+            AND a.company_id= #{paramMap.companyId}
+        </if>
+        <if test="paramMap.siteId!=null">
+            AND a.site_id = #{paramMap.siteId}
+        </if>
+
+        <if test="paramMap.orgIds!=null and paramMap.orgIds.size()>0">
+            AND a.org_id in
+            <foreach collection="paramMap.orgIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        <!-- 部门条件：查的是用户所在的部门 -->
+        <if test="paramMap.orgKwd!=null and paramMap.orgKwd!=''">
+            AND (a.org_name LIKE CONCAT('%', #{paramMap.orgKwd}, '%') or a.account_org_no LIKE CONCAT('%',
+            #{paramMap.orgKwd}, '%'))
+
+        </if>
+
+        <if test="paramMap.accountKwd!=null and paramMap.accountKwd!=''">
+            AND (a.fullname LIKE CONCAT('%', #{paramMap.accountKwd}, '%') OR a.name LIKE CONCAT('%',
+            #{paramMap.accountKwd}, '%') )
+        </if>
+    </select>
+
+    <select id="selectProjectIds" resultType="java.lang.Long">
+        select training_project_id from statistics_training_project_metadata_training_project_group_find WHERE 1=1
+        <if test="paramMap.companyId!=null">
+            AND company_id = #{paramMap.companyId}
+        </if>
+        <if test="paramMap.siteId!=null">
+            AND site_id = #{paramMap.siteId}
+        </if>
+        <if test="paramMap.orgIds!=null and paramMap.orgIds.size()>0">
+            and org_id in
+            <foreach collection="paramMap.orgIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="paramMap.startDate!=null and paramMap.endDate!=null">
+            AND (
+            <![CDATA[ DATE_FORMAT(training_project_end_time,'%Y-%m-%d')>=DATE_FORMAT(#{paramMap.startDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            AND
+            <![CDATA[ DATE_FORMAT(training_project_start_time,'%Y-%m-%d')<=DATE_FORMAT(#{paramMap.endDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            )
+        </if>
+    </select>
+
+
+    <select id="trainingProjectAccountGroup"
+            resultType="com.yizhi.training.application.vo.manage.ReportStudyTrainingProjectAccountVo">
+        select a.account_id as accountId,name as accountName,fullname as accountFullName,org_name as orgName
+        ,totalAsk,totalFinish,totalIn from
+        (SELECT aa.account_id,aa.name,aa.fullname,count(distinct(bb.id)) as totalAsk,aa.org_name -- 应该参加的人数
+        FROM statistics_training_project_metadata_account_group_find aa
+        left join statistics_training_project bb
+        on aa.account_id=bb.account_id
+        <if test="projectIds!=null and projectIds.size()>0">
+            and bb.training_project_id in
+            <foreach collection="projectIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        where 1=1
+        <if test="accountIds!=null and accountIds.size()>0">
+            and aa.account_id in
+            <foreach collection="accountIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        GROUP BY account_id
+        ) as a
+
+        left join
+
+        (
+        select c.account_id,c.totalIn,d.totalFinish from
+
+        (SELECT account_id,count(distinct(training_project_id)) as totalIn FROM statistics_training_project_learn
+        where 1=1 and -- 实际参加人数
+        <if test="accountIds!=null and accountIds.size()>0">
+            account_id in
+            <foreach collection="accountIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="startDate!=null and startDate!='' and endDate!=null and endDate!=''">
+            AND (
+            <![CDATA[ DATE_FORMAT(record_create_time,'%Y-%m-%d')<=DATE_FORMAT(#{endDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            AND
+            <![CDATA[ DATE_FORMAT(record_create_time,'%Y-%m-%d')>=DATE_FORMAT(#{startDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            )
+        </if>
+        <if test="projectIds!=null and projectIds.size()>0">
+            and training_project_id in
+            <foreach collection="projectIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        GROUP BY account_id)
+        as c
+
+
+        left join
+
+        (SELECT account_id,count(distinct(training_project_id)) as totalFinish FROM statistics_training_project_learn
+        where 1=1 and finished=1 -- 实际完成人数
+        <if test="accountIds!=null and accountIds.size()>0">
+            and account_id in
+            <foreach collection="accountIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        <if test="startDate!=null and startDate!='' and endDate!=null and endDate!=''">
+            AND (
+            <![CDATA[ DATE_FORMAT(record_create_time,'%Y-%m-%d')<=DATE_FORMAT(#{endDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            AND
+            <![CDATA[ DATE_FORMAT(record_create_time,'%Y-%m-%d')>=DATE_FORMAT(#{startDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            )
+        </if>
+        <if test="projectIds!=null and projectIds.size()>0">
+            and training_project_id in
+            <foreach collection="projectIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+        GROUP BY account_id)
+        as d
+
+        on c.account_id=d.account_id
+
+
+        )as b
+        on a.account_id=b.account_id
+    </select>
+
+
+    <select id="trainingProjectAccountGroupView"
+            resultType="com.yizhi.training.application.vo.manage.ReportStudyTrainingProjectAccountViewVo">
+        SELECT
+        a.account_id AS id,
+        a. NAME AS accountName,
+        a.fullname AS accountFullName,
+        a.org_name AS orgName,
+        a.training_project_name AS projectName,
+        case IFNULL(max(b.finished),-1) when -1 then '未开始' when 0 then '未完成' when 1 then '已完成' else '' end AS
+        state,
+        MIN(b.first_learn_time) AS startTime,
+        min(b.finish_time) AS endTime,
+        max(account_state) as accountState,
+        min(c.finish_time) as firstFinishTime,
+        IFNULL(max(b.learn_point),0) as point
+        FROM
+        statistics_training_project a
+        LEFT JOIN
+
+        (select * from statistics_training_project_learn where account_id=#{accountId}) b
+        ON a.training_project_id = b.training_project_id
+        AND b.account_id=a.account_id
+        and a.account_id=#{accountId} and b.account_id=#{accountId}
+        <if test="startDate!=null  and endDate!=null">
+            AND
+            <![CDATA[ DATE_FORMAT(b.record_create_time,'%Y-%m-%d')<=DATE_FORMAT(#{endDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            AND
+            <![CDATA[ DATE_FORMAT(b.record_create_time,'%Y-%m-%d')>=DATE_FORMAT(#{startDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+        </if>
+
+        LEFT JOIN (select * from statistics_training_project_learn where account_id=#{accountId}) c
+        ON a.training_project_id = c.training_project_id
+        AND a.account_id=c.account_id
+        and a.account_id=#{accountId} and b.account_id=#{accountId}
+        and c.finished=1
+        <if test="startDate!=null  and endDate!=null">
+            AND
+            <![CDATA[ DATE_FORMAT(c.record_create_time,'%Y-%m-%d')<=DATE_FORMAT(#{endDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            AND
+            <![CDATA[ DATE_FORMAT(c.record_create_time,'%Y-%m-%d')>=DATE_FORMAT(#{startDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+        </if>
+
+
+        where a.account_id=#{accountId}
+        and a.training_project_company_id=#{companyId}
+        and a.training_project_site_id=#{siteId}
+
+        <if test="projectName!=null">
+            and a.training_project_name LIKE CONCAT('%', #{projectName}, '%')
+        </if>
+        GROUP BY a.training_project_id
+    </select>
+
+
+    <select id="trainingProjectOrgGroup"
+            resultType="com.yizhi.training.application.vo.manage.ReportStudyTrainingProjectOrgVo">
+
+    </select>
+
+
+    <select id="selectLearnOnAccounts" resultType="java.lang.Long">
+        SELECT a.account_id
+        FROM statistics_training_project_metadata_account_group_find a
+        WHERE 1=1
+        <if test="paramMap.companyId!=null">
+            AND a.company_id= #{paramMap.companyId}
+        </if>
+        <if test="paramMap.siteId!=null">
+            AND a.site_id = #{paramMap.siteId}
+        </if>
+
+        <if test="paramMap.orgIds!=null and paramMap.orgIds.size()>0">
+            AND a.org_id in
+            <foreach collection="paramMap.orgIds" index="index" item="item" separator="," open="(" close=")">
+                #{item}
+            </foreach>
+        </if>
+
+        <!-- 部门条件：查的是用户所在的部门 -->
+        <if test="paramMap.orgKwd!=null and paramMap.orgKwd!=''">
+            AND (a.org_name LIKE CONCAT('%', #{paramMap.orgKwd}, '%') or a.account_org_no LIKE CONCAT('%',
+            #{paramMap.orgKwd}, '%'))
+        </if>
+
+        <if test="paramMap.accountKwd!=null and paramMap.accountKwd!=''">
+            AND (a.fullname LIKE CONCAT('%', #{paramMap.accountKwd}, '%') OR a.name LIKE CONCAT('%',
+            #{paramMap.accountKwd}, '%') )
+        </if>
+        GROUP BY a.account_id
+
+
+    </select>
+
+
+    <select id="trainingProjectGroupViewExportVO4"
+            resultType="com.yizhi.training.application.vo.manage.TrainingProjectGroupViewExportVO4">
+        SELECT a.training_project_id   AS projectId,
+               a.training_project_name AS projectName,
+               totalAskNum,
+               activityNum
+        FROM (SELECT training_project_id,
+                     training_project_name,
+                     COUNT(id) AS totalAskNum
+              FROM `statistics_training_project`
+              WHERE training_project_id = #{projectId}
+              GROUP BY training_project_id) a
+                 LEFT JOIN
+             (SELECT training_project_id, COUNT(1) AS activityNum
+              FROM tp_plan_activity
+              WHERE training_project_id = #{projectId}) b
+             ON a.training_project_id = b.training_project_id
+    </select>
+
+
+    <select id="listAccountIds" resultType="java.lang.Long">
+        SELECT account_id
+        FROM `statistics_training_project`
+        WHERE training_project_id = #{projectId}
+        ORDER BY account_id
+    </select>
+
+
+</mapper>

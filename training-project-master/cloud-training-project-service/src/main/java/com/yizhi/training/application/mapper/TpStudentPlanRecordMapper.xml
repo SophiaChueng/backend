@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.TpStudentPlanRecordMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yizhi.training.application.domain.TpStudentPlanRecord">
+        <id column="tb_id" property="id"/>
+        <result column="tb_tp_plan_id" property="tpPlanId"/>
+        <result column="tb_finished" property="finished"/>
+        <result column="tb_finish_date" property="finishDate"/>
+        <result column="tb_site_id" property="siteId"/>
+        <result column="tb_training_project_id" property="trainingProjectId"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        tb
+        .
+        id
+        AS tb_id,
+      tb.tp_plan_id AS tb_tp_plan_id,
+      tb.finished AS tb_finished,
+      tb.finish_date AS tb_finish_date,
+      tb.account_id AS tb_account_id,
+      tb.site_id AS tb_site_id,
+      tb.training_project_id AS tb_training_project_id
+    </sql>
+
+    <select id="getIdsByAccountId" resultType="java.lang.Long">
+        select distinct tp_plan_id
+        from tp_student_plan_record
+        where site_id = #{siteId} and account_id = #{accountId}
+        <if test="trainingProjectId != null">
+            and training_project_id = #{trainingProjectId}
+        </if>
+    </select>
+
+    <insert id="batchInsert">
+        insert into tp_student_plan_record
+        (id, tp_plan_id, finished, finish_date, account_id, site_id, training_project_id)
+        values
+        <foreach collection="list" item="i" separator=",">
+            (#{i.id}, #{i.tpPlanId}, #{i.finished}, #{i.finishDate}, #{i.accountId}, #{i.siteId},
+            #{i.trainingProjectId})
+        </foreach>
+    </insert>
+
+    <select id="getFinishedCountByPlanIds" resultType="java.lang.Integer">
+        select count(distinct tp_plan_id)
+        from tp_student_plan_record
+        where tp_plan_id in
+        (<foreach collection="list" separator="," item="item">#{item}</foreach>)
+        and
+        account_id = #{accountId}
+    </select>
+
+
+    <select id="getTpStudentPlanRecordByTpIdAndTime"
+            resultType="com.yizhi.training.application.domain.TpStudentPlanRecord">
+        select id,training_project_id as trainingProjectId,site_id as siteId,tp_plan_id as tpPlanId,account_id as
+        accountId,finished,finish_date as finishDate
+        from tp_student_plan_record as tb
+        where training_project_id=#{id}
+        <if test="startTime!=null and startTime!='' and endTime!=null and endTime!=''">
+            AND (<![CDATA[ DATE_FORMAT(finish_date,'%Y-%m-%d')<=DATE_FORMAT(#{endTime,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            AND <![CDATA[ DATE_FORMAT(finish_date,'%Y-%m-%d')>=DATE_FORMAT(#{startTime,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            )
+        </if>
+    </select>
+    <select id="getTpStudentPlanFinishRecords"
+            resultType="com.yizhi.training.application.domain.TpStudentPlanRecord">
+        SELECT r.account_id
+             , r.tp_plan_id
+             , MAX(r.finished) as finished
+        from tp_student_plan_record r
+        where r.account_id = #{accountId}
+          and r.training_project_id = #{projectId}
+          and r.finished = 1
+        GROUP BY r.account_id, r.tp_plan_id
+        ORDER BY r.account_id, r.tp_plan_id
+    </select>
+    <select id="getTpStudentPlanRecordBySiteIdsAndTime"
+            resultType="com.yizhi.training.application.vo.domain.TpStudentPlanRecordVo">
+        select
+        id as id,
+        training_project_id as trainingProjectId,
+        site_id as siteId,
+        tp_plan_id as tpPlanId,
+        account_id as accountId,
+        finished,
+        finish_date as finishDate
+        from tp_student_plan_record as tb
+        where site_id in
+        <foreach collection="siteIds" open="(" close=")" item="siteId" separator=",">
+            #{siteId}
+        </foreach>
+        <if test="startTime!=null and startTime!='' and endTime!=null and endTime!=''">
+            AND (<![CDATA[ DATE_FORMAT(finish_date,'%Y-%m-%d')<=DATE_FORMAT(#{endTime,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            AND <![CDATA[ DATE_FORMAT(finish_date,'%Y-%m-%d')>=DATE_FORMAT(#{startTime,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            )
+        </if>
+    </select>
+    <select id="getFinishedCountAllByPlanId" resultType="java.lang.Integer">
+        select count(distinct tp_plan_id )
+        from tp_student_plan_record
+        where account_id = #{accountId}
+        and site_id = #{siteId}
+        and tp_plan_id in
+        <foreach collection="planIds" separator="," item="id" close=")" open="(">
+            #{id}
+        </foreach>
+        and finished = 1
+    </select>
+    <select id="getFinishedIdByPlanId" resultType="java.lang.Long">
+        select distinct tp_plan_id
+        from tp_student_plan_record
+        where account_id = #{accountId}
+        and site_id = #{siteId}
+        and tp_plan_id in
+        <foreach collection="planIds" separator="," item="id" close=")" open="(">
+            #{id}
+        </foreach>
+        and finished = 1
+    </select>
+    <select id="getPlanMinFinishedTime" resultType="java.util.Date">
+        select min(finish_date) minFinished
+        from tp_student_plan_record
+        where
+        account_id = #{accountId}
+        and site_id = #{siteId}
+        and tp_plan_id in
+        <foreach collection="prePlanIds" separator="," item="planId" close=")" open="(">
+            #{planId}
+        </foreach>
+        group by tp_plan_id
+        order by minFinished
+        limit #{finishedCount}, 1
+    </select>
+    <select id="getFinishedAccountIds" resultType="java.lang.Long">
+        select distinct account_id
+        from tp_student_plan_record
+        where tp_plan_id = #{planId}
+          and company_id = #{companyId}
+          and site_id = #{siteId}
+          and finished = 1
+    </select>
+</mapper>

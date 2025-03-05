@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.TpStudentEnrollPassedMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yizhi.training.application.domain.TpStudentEnrollPassed">
+        <result column="tb_id" property="id"/>
+        <result column="tb_training_project_id" property="trainingProjectId"/>
+        <result column="tb_enroll_id" property="enrollId"/>
+        <result column="tb_account_id" property="accountId"/>
+        <result column="tb_start_time" property="startTime"/>
+        <result column="tb_end_time" property="endTime"/>
+        <result column="tb_join_time" property="joinTime"/>
+        <result column="tb_site_id" property="siteId"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        tb
+        .
+        id
+        AS tb_id,
+      tb.training_project_id AS tb_training_project_id,
+      tb.enroll_id AS tb_enroll_id,
+      tb.account_id AS tb_account_id,
+      tb.start_time AS tb_start_time,
+      tb.end_time AS tb_end_time,
+      tb.join_time AS tb_join_time,
+      tb.site_id AS tb_site_id
+    </sql>
+
+    <!--&lt;!&ndash; 查询已经报名的培训项目id &ndash;&gt;-->
+    <!--<select id="selectTpIds" resultType="java.lang.Long">-->
+    <!--select tb.training_project_id-->
+    <!--from tp_student_enroll_passed tb-->
+    <!--where tb.account_id = #{accountId}-->
+    <!--</select>-->
+
+</mapper>

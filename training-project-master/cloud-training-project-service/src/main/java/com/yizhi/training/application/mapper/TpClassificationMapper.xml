@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.TpClassificationMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yizhi.training.application.domain.TpClassification">
+        <id column="tb_id" property="id"/>
+        <result column="tb_name" property="name"/>
+        <result column="tb_description" property="description"/>
+        <result column="tb_deleted" property="deleted"/>
+        <result column="tb_create_by_id" property="createById"/>
+        <result column="tb_create_by_name" property="createByName"/>
+        <result column="tb_create_time" property="createTime"/>
+        <result column="tb_update_by_id" property="updateById"/>
+        <result column="tb_update_by_name" property="updateByName"/>
+        <result column="tb_update_time" property="updateTime"/>
+        <result column="tb_site_id" property="siteId"/>
+        <result column="tb_org_id" property="orgId"/>
+        <result column="tb_company_id" property="companyId"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        tb
+        .
+        id
+        AS tb_id,
+      tb.name AS tb_name,
+      tb.description AS tb_description,
+      tb.deleted AS tb_deleted,
+      tb.create_by_id AS tb_create_by_id,
+      tb.create_by_name AS tb_create_by_name,
+      tb.create_time AS tb_create_time,
+      tb.update_by_id AS tb_update_by_id,
+      tb.update_by_name AS tb_update_by_name,
+      tb.update_time AS tb_update_time,
+      tb.site_id AS tb_site_id,
+      tb.org_id AS tb_org_id,
+      tb.company_id AS tb_company_id
+    </sql>
+
+</mapper>

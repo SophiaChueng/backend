@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.yizhi</groupId>
+        <artifactId>wmy-parent</artifactId>
+        <version>4.1-SNAPSHOT</version>
+        <relativePath/>
+    </parent>
+
+    <artifactId>cloud-training-project</artifactId>
+    <packaging>pom</packaging>
+    <version>4.1-SNAPSHOT</version>
+    <modules>
+        <module>cloud-training-project-api</module>
+        <module>cloud-training-project-service</module>
+    </modules>
+    <repositories>
+        <repository>
+            <id>yzkj-wmy-4.0-group</id>
+            <url>http://mvn.kmelearning.com/repository/yzkj-wmy/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+</project>

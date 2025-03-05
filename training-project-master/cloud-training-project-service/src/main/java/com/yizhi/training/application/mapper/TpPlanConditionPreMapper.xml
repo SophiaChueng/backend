@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.TpPlanConditionPreMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yizhi.training.application.domain.TpPlanConditionPre">
+        <id column="tb_id" property="id"/>
+        <result column="tb_training_project_id" property="trainingProjectId"/>
+        <result column="tb_plan_id" property="planId"/>
+        <result column="tb_pre_plan_id" property="prePlanId"/>
+        <result column="tb_deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        tb
+        .
+        id
+        AS tb_id,
+      tb.training_project_id AS tb_training_project_id,
+      tb.plan_id AS tb_plan_id,
+      tb.pre_plan_id AS tb_pre_plan_id,
+      tb.deleted AS tb_deleted
+    </sql>
+
+    <insert id="batchInsert">
+        insert into tp_plan_condition_pre
+        (id,
+        training_project_id,
+        plan_id,
+        pre_plan_id,
+        deleted)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.trainingProjectId}, #{item.planId}, #{item.prePlanId}, #{item.deleted})
+        </foreach>
+    </insert>
+
+    <!-- 根据学习计划id集合删除相应条件 -->
+    <update id="deleteByPlanIds">
+        update tp_plan_condition_pre
+        set deleted = 1
+        where plan_id in
+        <foreach collection="list" item="item" open="(" close=")" separator=",">
+            #{item}
+        </foreach>
+    </update>
+
+    <select id="getPrePlanIdsByPlanId" resultType="java.lang.Long">
+        select pre_plan_id
+        from tp_plan_condition_pre
+        where deleted = 0
+          and plan_id = #{planId}
+    </select>
+</mapper>

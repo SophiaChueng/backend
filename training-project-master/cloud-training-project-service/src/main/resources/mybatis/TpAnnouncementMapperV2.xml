@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.v2.mapper.TpAnnouncementMapperV2">
+    <select id="getMaxSort" resultType="java.lang.Integer">
+        SELECT MAX(`sort`)
+        FROM `tp_announcement`
+        <where>
+            `training_project_id` = #{trainingProjectId}
+            AND `deleted` = 0
+        </where>
+    </select>
+
+    <update id="updateSortValue">
+        UPDATE `tp_announcement`
+        SET `sort` = `sort` + 1
+        <where>
+            `training_project_id` = #{trainingProjectId}
+            AND `deleted` = 0
+            AND `sort` &gt;= #{sort}
+        </where>
+    </update>
+
+</mapper>

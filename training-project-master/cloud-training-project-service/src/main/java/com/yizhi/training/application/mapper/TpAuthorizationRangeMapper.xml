@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.TpAuthorizationRangeMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yizhi.training.application.domain.TpAuthorizationRange">
+        <id column="tb_id" property="id"/>
+        <result column="tb_biz_id" property="bizId"/>
+        <result column="tb_type" property="type"/>
+        <result column="tb_relation_id" property="relationId"/>
+        <result column="tb_name" property="name"/>
+        <result column="tb_site_id" property="siteId"/>
+        <result column="tb_deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        tb
+        .
+        id
+        AS tb_id,
+      tb.biz_id AS tb_biz_id,
+      tb.type AS tb_type,
+      tb.relation_id AS tb_relation_id,
+      tb.name AS tb_name,
+      tb.site_id AS tb_site_id,
+      tb.deleted AS tb_deleted
+    </sql>
+
+    <select id="selectBizIdByRelationId" resultType="java.lang.Long">
+        <if test="relationIds != null">
+            select tb.biz_id
+            from tp_authorization_range tb
+            <where>
+                tb.site_id = #{siteId}
+                and tb.deleted = 0
+                and tb.relation_id in
+                <foreach collection="relationIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+            </where>
+        </if>
+    </select>
+
+    <insert id="batchInsert">
+        insert into tp_authorization_range
+        (id, biz_id, type, relation_id, name, site_id, deleted)
+        values
+        <foreach collection="list" separator="," item="item">
+            (#{item.id}, #{item.bizId}, #{item.type}, #{item.relationId}, #{item.name}, #{item.siteId}, 0)
+        </foreach>
+    </insert>
+
+    <select id="getUsefulIds" resultType="java.lang.Long">
+        <if test="relationIds != null">
+            select biz_id
+            from tp_authorization_range
+            <where>
+                deleted = 0
+                and site_id = #{siteId}
+                and relation_id in
+                <foreach collection="relationIds" open="(" close=")" item="item" separator=",">
+                    #{item}
+                </foreach>
+                <if test="ids != null and ids.size()>0">
+                    and biz_id in
+                    <foreach collection="ids" open="(" close=")" item="id" separator=",">#{id}</foreach>
+                </if>
+            </where>
+        </if>
+    </select>
+    <select id="selectBySiteIds" resultType="com.yizhi.training.application.domain.TpAuthorizationRange">
+        SELECT
+        *
+        FROM tp_authorization_range
+        WHERE `deleted` = '0'
+        and site_id in
+        <foreach collection="siteIds" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+    </select>
+</mapper>

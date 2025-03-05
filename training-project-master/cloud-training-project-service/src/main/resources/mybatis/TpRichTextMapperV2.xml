@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.v2.mapper.TpRichTextMapperV2">
+
+    <update id="deleteBatchByTpIds">
+        UPDATE `tp_rich_text`
+        SET `deleted` = 1
+        WHERE `training_project_id` IN
+        <foreach collection="tpIds" item="tpId" open="(" close=")" separator=",">
+            #{tpId}
+        </foreach>
+    </update>
+
+    <update id="deleteByItemId">
+        UPDATE tp_rich_text
+        SET deleted = 1
+        WHERE training_project_id = #{trainingProjectId}
+          AND directory_item_id = #{directoryItemId}
+          AND directory_type = #{directoryType}
+    </update>
+
+
+</mapper>

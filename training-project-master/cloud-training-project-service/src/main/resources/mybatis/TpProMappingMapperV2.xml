@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.v2.mapper.TpProMappingMapperV2">
+    <update id="updateSortValue">
+        UPDATE `tp_pro_mapping`
+        SET `sort` = `sort` + 1
+        WHERE `tp_pro_id` = #{tpProId}
+          AND `sort` &gt;= #{sort}
+    </update>
+
+    <select id="getTpCountOfPro" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM `tp_pro_mapping` tpm
+        LEFT JOIN `training_project` tp ON tpm.`training_project_id` = tp.`id`
+        WHERE tpm.`tp_pro_id` = #{tpProId}
+        <if test="searchTpName != null and searchTpName != ''">
+            AND (tp.`name` LIKE CONCAT('%', #{searchTpName}, '%') OR tp.`key_words` LIKE CONCAT('%', #{searchTpName},
+            '%'))
+        </if>
+        AND tpm.`deleted` = 0
+        AND tp.`deleted` = 0
+    </select>
+
+    <select id="getTpListOfPro" resultType="com.yizhi.training.application.domain.TrainingProject">
+        SELECT tp.*
+        FROM `tp_pro_mapping` tpm
+        LEFT JOIN `training_project` tp ON tpm.`training_project_id` = tp.`id`
+        WHERE tpm.`tp_pro_id` = #{tpProId}
+        <if test="searchTpName != null and searchTpName != ''">
+            AND (tp.`name` LIKE CONCAT('%', #{searchTpName}, '%') OR tp.`key_words` LIKE CONCAT('%', #{searchTpName},
+            '%'))
+        </if>
+        AND tpm.`deleted` = 0
+        AND tp.`deleted` = 0
+        <if test="status != null">
+            AND tp.status = #{status}
+        </if>
+        ORDER BY tpm.`sort` DESC, tpm.`create_time` DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+    <select id="getMaxSort" resultType="java.lang.Integer">
+        SELECT MAX(`sort`)
+        FROM `tp_pro_mapping`
+        WHERE `company_id` = #{companyId}
+          AND `site_id` = #{siteId}
+          AND `tp_pro_id` = #{tpProId}
+          AND `deleted` = 0
+    </select>
+
+    <select id="getMaxSortsBy" resultType="com.yizhi.training.application.domain.TpProMapping">
+        SELECT `tp_pro_id`, `sort`
+        FROM `tp_pro_mapping`
+        WHERE `company_id` = #{companyId}
+        AND `site_id` = #{siteId}
+        AND `training_project_id` = #{trainingProjectId}
+        AND `deleted` = 0
+        AND `tp_pro_id` IN
+        <foreach collection="tpProIds" item="tpProId" open="(" close=")" separator=",">
+            #{tpProId}
+        </foreach>
+        GROUP BY `training_project_id` HAVING `sort` = MAX(`sort`)
+    </select>
+    <select id="getTpHomeListPro" resultType="com.yizhi.training.application.v2.vo.OnlineTpVO">
+        select tp.id as tpId,
+        tp.tp_pro_name as name,
+        tp.tp_pro_logo as logo,
+        tp.sort as sort,
+        tp.create_time as createdAt,
+        "1" as tpType
+        from tp_pro_mapping tpm
+        left join training_project_pro tp on tp.id = tpm.tp_pro_id
+        left join training_project t on t.id = tpm.training_project_id
+        LEFT JOIN tp_authorization_range tb on tb.biz_id = t.id and tb.deleted = 0 and tb.site_id = #{siteId}
+        where
+        tpm.deleted = 0
+        and tp.deleted = 0
+        and t.deleted = 0
+        and t.status = 1
+        and t.enable_queue = 1
+        and t.site_id = #{siteId}
+        and t.company_id = #{companyId}
+        and tpm.site_id = #{siteId}
+        and tpm.company_id = #{companyId}
+        and tp.site_id = #{siteId}
+        and tp.company_id = #{companyId}
+        AND (t.visible_range = 1 or (tb.relation_id in
+        <foreach collection="relationIds" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+        ))
+        <if test="terminalType == 'PC'">
+            and (t.publish_terminal = 1 or t.publish_terminal = 0)
+        </if>
+        <if test="terminalType == 'MOBILE'">
+            and (t.publish_terminal = 2 or t.publish_terminal = 0)
+        </if>
+        group by tp.id
+    </select>
+</mapper>

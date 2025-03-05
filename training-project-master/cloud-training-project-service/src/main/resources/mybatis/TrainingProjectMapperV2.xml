@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.v2.mapper.TrainingProjectMapperV2">
+    <update id="updateTpBaseInfo">
+        UPDATE `training_project`
+        <set>
+            `start_time` = #{startTime},
+            `end_time` = #{endTime},
+            <if test="tpClassificationId != null">
+                `tp_classification_id` = #{tpClassificationId},
+            </if>
+            <if test="name != null">
+                `name` = #{name},
+            </if>
+            <if test="point != null">
+                `point` = #{point},
+            </if>
+            <if test="logoImg != null">
+                `logo_img` = #{logoImg},
+            </if>
+            <if test="keyWords != null">
+                `key_words` = #{keyWords},
+            </if>
+            <if test="enableEnroll != null">
+                `enable_enroll` = #{enableEnroll},
+            </if>
+            <if test="sort != null">
+                `sort` = #{sort},
+            </if>
+            <if test="publishTerminal != null">
+                `publish_terminal` = #{publishTerminal},
+            </if>
+            <if test="enableQueue != null">
+                `enable_queue` = #{enableQueue},
+            </if>
+        </set>
+        WHERE `id` = #{id}
+    </update>
+
+    <select id="getTrainingProjectList" resultType="com.yizhi.training.application.domain.TrainingProject">
+        SELECT
+        tp.`id`,
+        tp.`tp_classification_id`,
+        tp.`logo_img`,
+        tp.`name`,
+        tp.`start_time`,
+        tp.`end_time`,
+        tp.`status`,
+        tp.`visible_range`,
+        tp.`enable_enroll`,
+        tp.`enable_sign`,
+        tp.`enable_queue`,
+        tp.`sort`,
+        tp.`publish_terminal`,
+        tp.`enable_msg_remind`,
+        enroll.`enable_pay`,
+        enroll.`pay_type`
+        FROM training_project tp
+        LEFT JOIN tr_enroll enroll ON tp.`id` = enroll.`training_project_id`
+        <where>
+            tp.`deleted` = 0
+            <if test="enableEnroll != null">
+                AND tp.`enable_enroll` = #{enableEnroll}
+            </if>
+            <if test="enableEnroll != null and enablePay != null">
+                AND enroll.`enable_pay` = #{enablePay}
+            </if>
+            <if test="enablePay == 1">
+                AND enroll.`pay_type` IN (1,2,3)
+            </if>
+
+            <if test="tpClassificationId != null">
+                AND tp.`tp_classification_id` = #{tpClassificationId}
+            </if>
+            <if test="status != null">
+                AND tp.`status` = #{status}
+            </if>
+            <if test="companyId != null">
+                AND tp.`company_id` = #{companyId}
+            </if>
+            <if test="siteId != null">
+                AND tp.`site_id` = #{siteId}
+            </if>
+            <if test="name != null">
+                AND (tp.`name` LIKE CONCAT('%', #{name}, '%') OR tp.`key_words` LIKE CONCAT('%', #{name}, '%'))
+            </if>
+            <if test="processStatus != null and processStatus == 1">
+                AND tp.`start_time` &gt; #{current}
+            </if>
+            <if test="processStatus != null and processStatus == 2">
+                AND (tp.`start_time` IS NULL OR tp.`start_time` &lt;= #{current})
+                AND (tp.`end_time` IS NULL OR tp.`end_time` &gt;= #{current})
+            </if>
+            <if test="processStatus != null and processStatus == 3">
+                AND tp.`end_time` &lt; #{current}
+            </if>
+            <if test="visibleRange != null">
+                AND tp.`visible_range` = #{visibleRange}
+            </if>
+        </where>
+        ORDER BY tp.`sort` DESC, tp.`create_time` DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+
+
+    <select id="getTrainingProjectCount" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM training_project tp
+        LEFT JOIN tr_enroll enroll ON tp.`id` = enroll.`training_project_id`
+        <where>
+            tp.`deleted` = 0
+            <if test="enableEnroll != null">
+                AND tp.`enable_enroll` = #{enableEnroll}
+            </if>
+            <if test="enableEnroll != null and enablePay != null">
+                AND enroll.`enable_pay` = #{enablePay}
+            </if>
+            <if test="enablePay == 1">
+                AND enroll.`pay_type` IN (1,2,3)
+            </if>
+
+            <if test="tpClassificationId != null">
+                AND tp.`tp_classification_id` = #{tpClassificationId}
+            </if>
+            <if test="status != null">
+                AND tp.`status` = #{status}
+            </if>
+            <if test="companyId != null">
+                AND tp.`company_id` = #{companyId}
+            </if>
+            <if test="siteId != null">
+                AND tp.`site_id` = #{siteId}
+            </if>
+            <if test="name != null">
+                AND (tp.`name` LIKE CONCAT('%', #{name}, '%') OR tp.`key_words` LIKE CONCAT('%', #{name}, '%'))
+            </if>
+            <if test="processStatus == 1">
+                AND tp.`start_time` &gt; #{current}
+            </if>
+            <if test="processStatus == 2">
+                AND tp.`start_time` &lt;= #{current}
+                AND tp.`end_time` &gt;= #{current}
+            </if>
+            <if test="processStatus == 3">
+                AND tp.`end_time` &lt; #{current}
+            </if>
+            <if test="visibleRange != null">
+                AND tp.`visible_range` = #{visibleRange}
+            </if>
+        </where>
+    </select>
+
+    <select id="getMaxSort" resultType="java.lang.Integer">
+        SELECT MAX(`sort`)
+        FROM `training_project`
+        WHERE `company_id` = #{companyId}
+          AND `site_id` = #{siteId}
+          AND `tp_classification_id` = #{tpClassificationId}
+          AND `deleted` = 0
+    </select>
+    <select id="getHotEnrollTp" resultType="com.yizhi.training.application.v2.vo.HotTpVO">
+        select t.name as name,
+        t.logo_img as logo,
+        te.end_time as enrollEndTime,
+        t.id as tpId,
+        t.visible_range as visibleRange
+        from training_project t
+        left join tr_enroll te
+        on te.training_project_id = t.id
+        and te.company_id = #{companyId}
+        and te.site_id = #{siteId}
+        left join tp_pro_mapping tm
+        on tm.training_project_id = t.id
+        and tm.deleted = 0
+        and tm.company_id = #{companyId}
+        and tm.site_id = #{siteId}
+        where
+        t.company_id = #{companyId}
+        and t.site_id = #{siteId}
+        <if test="terminalType == 'PC'">
+            and (t.publish_terminal = 1 or t.publish_terminal = 0)
+        </if>
+        <if test="terminalType == 'MOBILE'">
+            and (t.publish_terminal = 2 or t.publish_terminal = 0)
+        </if>
+        and te.enable_pay = 0
+        and te.start_time &lt;= #{date}
+        and te.end_time &gt;= #{date}
+        and t.enable_enroll = 1
+        and t.deleted = 0
+        and t.status = 1
+        and tm.id is null
+        order by te.end_time
+    </select>
+    <select id="getOnLineTp" resultType="com.yizhi.training.application.v2.vo.OnlineTpVO">
+        select t.name as name,
+        t.logo_img as logo,
+        t.start_time as startAt,
+        t.end_time as endAt,
+        t.id as tpId,
+        t.visible_range as visibleRange,
+        t.create_time as createdAt,
+        te.pay_type as payType,
+        t.sort as sort,
+        "0" as tpType,
+        t.enable_enroll as enableEnroll
+        from training_project t
+        left join tr_enroll te
+        on te.training_project_id = t.id
+        and te.company_id = #{companyId}
+        and te.site_id = #{siteId}
+        left join tp_pro_mapping tm
+        on tm.training_project_id = t.id
+        and tm.deleted = 0
+        and tm.company_id = #{companyId}
+        and tm.site_id = #{siteId}
+        where
+        t.company_id = #{companyId}
+        and t.site_id = #{siteId}
+        <if test="terminalType == 'PC'">
+            and (t.publish_terminal = 1 or t.publish_terminal =0 )
+        </if>
+        <if test="terminalType == 'MOBILE'">
+            and (t.publish_terminal = 2 or t.publish_terminal =0 )
+        </if>
+        and t.deleted = 0
+        and t.status = 1
+        and tm.id is null
+        and t.enable_queue = 1
+    </select>
+    <select id="judgeProjectDesc" resultType="java.lang.Integer">
+        select
+        count(1)
+        from training_project t
+        left join tr_enroll_record te
+        on te.training_project_id = t.id
+        where
+        t.company_id = #{companyId}
+        and t.site_id = #{siteId}
+        <if test="terminalType == 'PC'">
+            and (t.publish_terminal = 1 or t.publish_terminal =0 )
+        </if>
+        <if test="terminalType == 'MOBILE'">
+            and (t.publish_terminal = 2 or t.publish_terminal =0 )
+        </if>
+        and (te.audit_status = 0 or te.audit_status = 2)
+        and t.deleted = 0
+        and t.enable_enroll = 1
+        and t.id = #{trainingProjectId}
+        and te.account_id = #{accountId}
+        and t.project_description_flag = 0
+    </select>
+
+    <select id="getRecentStudyList" resultType="com.yizhi.training.application.v2.vo.RecentStudyTrainingVO">
+        SELECT tp.`id`       AS trainingProjectId,
+               tp.`name`     AS trainingProjectName,
+               tp.`logo_img` AS image,
+               tp.start_time as startTime,
+               tp.end_time   as endTime,
+               tmp.lastStudyTime,
+               tp.enable_enroll,
+               tre.pay_type
+        FROM `training_project` tp
+                 INNER JOIN (SELECT tvr.`training_project_id`,
+                                    MAX(tvr.`time`) AS lastStudyTime
+                             FROM `tp_view_record` tvr
+                             WHERE tvr.`company_id` = #{companyId}
+                               AND tvr.`site_id` = #{siteId}
+                               AND tvr.`account_id` = #{accountId}
+                             GROUP BY tvr.`training_project_id`) tmp ON tmp.`training_project_id` = tp.`id`
+
+                 LEFT JOIN tr_enroll tre on tre.training_project_id = tp.id
+        WHERE tp.`company_id` = #{companyId}
+          AND tp.`site_id` = #{siteId}
+          AND tp.`deleted` = 0
+          AND tp.`status` = 1
+        ORDER BY tmp.lastStudyTime DESC
+    </select>
+
+
+</mapper>

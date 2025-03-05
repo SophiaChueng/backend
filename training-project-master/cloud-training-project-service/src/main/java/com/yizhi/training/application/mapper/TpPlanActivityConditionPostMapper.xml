@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.TpPlanActivityConditionPostMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yizhi.training.application.domain.TpPlanActivityConditionPost">
+        <id column="tb_id" property="id"/>
+        <result column="tb_tp_plan_activity_id" property="tpPlanActivityId"/>
+        <result column="tb_type" property="type"/>
+        <result column="tb_exam_id" property="examId"/>
+        <result column="tb_exam_score" property="examScore"/>
+        <result column="tb_certificate_id" property="certificateId"/>
+        <result column="tb_deleted" property="deleted"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        tb
+        .
+        id
+        AS tb_id,
+      tb.tp_plan_activity_id AS tb_tp_plan_activity_id,
+      tb.type AS tb_type,
+      tb.exam_id AS tb_exam_id,
+      tb.exam_score AS tb_exam_score,
+      tb.certificate_id AS tb_certificate_id,
+      tb.deleted AS tb_deleted
+    </sql>
+
+    <insert id="batchInsert">
+        insert into tp_plan_activity_condition_post
+        (id,
+        tp_plan_activity_id,
+        `type`,
+        exam_id,
+        exam_score,
+        certificate_id,
+        deleted)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.id}, #{item.tpPlanActivityId}, #{item.type}, #{item.examId},
+            #{item.examScore}, #{item.certificateId}, #{item.deleted})
+        </foreach>
+    </insert>
+
+    <select id="selectListByActivityIds" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from tp_plan_activity_condition_post tb
+        where
+        tb.tp_plan_activity_id in
+        <foreach collection="list" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+        and tb.deleted = 0
+    </select>
+
+    <update id="deleteByActivityIds">
+        update tp_plan_activity_condition_post
+        set deleted = 1
+        where tp_plan_activity_id in
+        (<foreach collection="activityIds" item="item" separator=",">#{item}</foreach>)
+    </update>
+</mapper>

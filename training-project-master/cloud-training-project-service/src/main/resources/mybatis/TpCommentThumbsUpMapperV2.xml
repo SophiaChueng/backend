@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.v2.mapper.TpCommentThumbsUpMapperV2">
+    <resultMap id="countMap" type="com.yizhi.training.application.v2.vo.TpCommentVO">
+        <id column="tp_comment_id" property="id"/>
+        <id column="thumbs_up_count" property="thumbsUpCount"/>
+    </resultMap>
+
+    <select id="getThumbsUpCounts" resultMap="countMap">
+        SELECT `tp_comment_id` AS id, COUNT(`account_id`) AS thumbs_up_count
+        FROM `tp_comment_thumbs_up`
+        WHERE `tp_comment_id` IN
+        <foreach collection="tpCommentIds" item="tpCommentId" open="(" close=")" separator=",">
+            #{tpCommentId}
+        </foreach>
+        GROUP BY `tp_comment_id`
+    </select>
+
+</mapper>

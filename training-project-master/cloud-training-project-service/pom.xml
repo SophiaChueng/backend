@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>cloud-training-project</artifactId>
+        <groupId>com.yizhi</groupId>
+        <version>4.1-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>cloud-training-project-service</artifactId>
+    <version>4.1-SNAPSHOT</version>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-training-project-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-sign-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-live-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-course-api</artifactId>
+        </dependency>
+
+        <!-- 本地依赖 -->
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-newMessage-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-system-api</artifactId>
+        </dependency>
+
+        <!-- 积分 point  -->
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-point-api</artifactId>
+        </dependency>
+
+        <!-- 作业API  -->
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-assignment-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-site-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-util</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>library-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-common-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-orm</artifactId>
+        </dependency>
+        <!-- 报名api -->
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-enroll-api</artifactId>
+        </dependency>
+
+        <!-- 资料api -->
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-documents-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-exam-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-forum-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-certificate-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-lecturer-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-template-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>chat-practice-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>cloud-research-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.yizhi</groupId>
+            <artifactId>game-api</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- deploy 时跳过该模块 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>${mapstruct.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

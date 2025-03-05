@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.StatisticsTrainingProjectMapper">
+
+
+    <select id="selectMaxDate" resultType="java.util.Date">
+        SELECT MAX(DATE_FORMAT(record_create_time, '%Y-%m-%d'))
+        FROM statistics_training_project_learn
+    </select>
+
+    <select id="selectRecordMinTime" resultType="java.util.Date">
+        select min(create_time)
+        from training_project
+    </select>
+
+    <select id="getAllTrainingProject" resultType="com.yizhi.training.application.domain.TrainingProject">
+        select id,
+               name,
+               start_time    as startTime,
+               end_time      as endTime,
+               visible_range as
+                                visibleRange,
+               status,
+               company_id    as companyId,
+               site_id          siteId,
+               org_id        as
+                                orgId
+        from training_project
+        where (status in (1, 2) and deleted = 0)
+        order by create_time
+    </select>
+
+    <delete id="deleteRecordeByDate">
+        DELETE
+        statistics_training_project_learn WHERE  <![CDATA[ date_format(record_create_time,'%Y-%m-%d')=
+        #{currentDate}
+        ]]>
+    </delete>
+
+    <select id="getRangeByTrainingProjectId" resultType="java.lang.Long">
+        select relation_id
+        from tp_authorization_range
+        where biz_id = #{trainingProjectId}
+          and deleted = 0
+    </select>
+
+
+    <insert id="insertAccountLearn">
+
+
+        insert into statistics_training_project_learn(training_project_id, account_id, first_learn_time, finished,
+                                                      finish_time, record_create_time)
+
+
+        SELECT aa.training_project_id,
+               aa.account_id,
+               first_learn_time,
+               IFNULL(tspr.finished, 0)            AS finished,
+               tspr.`finish_date`                  AS finish_time,
+               DATE_FORMAT(#{curDate}, '%Y-%m-%d') AS record_create_time
+        FROM (
+                 --  最外层这段sql是和培训项目完成表进行关联，如果培训项目完成表有记录就是已完成，如果完成表没有记录就是这个人对于这个培训项目未完成
+
+                 SELECT training_project_id, account_id, MIN(finish_date) AS first_learn_time
+                 FROM ( -- 这段sql是查询出来 根据account_id和培训项目id分组  这个人对于这个培训项目当天的最早学习开始时间
+                          SELECT tsar.account_id,
+                                 tsar.relation_id, -- 这段sql 是查询出来和培训项目进行关联的学习活动
+                                 tsar.`finish_date`,
+                                 tpa.training_project_id
+                          FROM `tp_student_activity_record` tsar
+                                   LEFT JOIN `tp_plan_activity` tpa
+                                             ON tsar.`relation_id` = tpa.`relation_id`
+                          WHERE DATE_FORMAT(tsar.finish_date, '%Y-%m-%d') = DATE_FORMAT(#{curDate}, '%Y-%m-%d')
+                            AND training_project_id = #{trainingProjectId}) AS zh
+                 GROUP BY training_project_id, account_id)
+                 AS aa
+                 LEFT JOIN `tp_student_project_record` tspr
+                           ON aa.account_id = tspr.account_id AND aa.training_project_id = tspr.training_project_id
+
+
+    </insert>
+
+
+    <select id="selectAccountLearn" resultType="com.yizhi.training.application.domain.StatisticsTrainingProjectLearn">
+        SELECT account_id, id
+        FROM statistics_training_project_learn
+        WHERE training_project_id = #{trainingProjectId}
+          AND DATE_FORMAT(record_create_time, '%Y-%m-%d') = DATE_FORMAT(#{curDate}, '%Y-%m-%d')
+    </select>
+
+
+    <select id="selectAccountLearnByTrainingProjectId" resultType="java.util.Map">
+        SELECT account_id AS accountId
+        FROM statistics_training_project
+        WHERE training_project_id = #{trainingProjectId}
+    </select>
+
+
+    <delete id="deleteStatisticsTrainingProjectToGroupFind">
+        delete
+        from statistics_training_project_metadata_training_project_group_find
+    </delete>
+
+
+    <insert id="insertStatisticsTrainingProjectToGroupFind">
+        INSERT INTO statistics_training_project_metadata_training_project_group_find(training_project_id,
+                                                                                     training_project_name,
+                                                                                     training_project_create_time,
+                                                                                     training_project_start_time,
+                                                                                     training_project_end_time,
+                                                                                     training_project_state, org_id,
+                                                                                     site_id, company_id,
+                                                                                     training_project_org_name, org_no)
+        SELECT training_project_id,
+               training_project_name,
+               training_project_create_time,
+               training_project_start_time,
+               training_project_end_time,
+               training_project_state,
+               training_project_org_id,
+               training_project_site_id,
+               training_project_company_id,
+               training_project_org_name,
+               org_no
+        FROM statistics_training_project
+        GROUP BY training_project_id, training_project_site_id, training_project_company_id
+    </insert>
+
+
+    <delete id="deleteStatisticsTrainingProjectToAccountGroupFind">
+        delete
+        from statistics_training_project_metadata_account_group_find
+    </delete>
+
+    <insert id="insertStatisticsTrainingProjectToAccountGroupFind">
+        insert into statistics_training_project_metadata_account_group_find(org_id, site_id, company_id, account_id,
+                                                                            work_num, name, fullname, org_name,
+                                                                            org_parent_names, account_state,
+                                                                            account_org_id, account_site_id,
+                                                                            account_company_id, account_org_no)
+        select training_project_org_id,
+               training_project_site_id,
+               training_project_company_id,
+               account_id,
+               work_num,
+               name,
+               fullname,
+               org_name,
+               org_parent_names,
+               account_state,
+               account_org_id,
+               account_site_id,
+               account_company_id,
+               org_no
+        from statistics_training_project a
+        group by a.account_id,
+                 a.training_project_org_id,
+                 a.training_project_site_id,
+                 a.training_project_company_id
+
+    </insert>
+
+
+</mapper>

@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.TpPlanMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yizhi.training.application.domain.TpPlan">
+        <id column="tb_id" property="id"/>
+        <result column="tb_training_project_id" property="trainingProjectId"/>
+        <result column="tb_name" property="name"/>
+        <result column="tb_start_time" property="startTime"/>
+        <result column="tb_end_time" property="endTime"/>
+        <result column="tb_sort" property="sort"/>
+        <result column="tb_deleted" property="deleted"/>
+        <result column="tb_create_by_id" property="createById"/>
+        <result column="tb_create_by_name" property="createByName"/>
+        <result column="tb_create_time" property="createTime"/>
+        <result column="tb_update_by_id" property="updateById"/>
+        <result column="tb_update_by_name" property="updateByName"/>
+        <result column="tb_update_time" property="updateTime"/>
+        <result column="tb_site_id" property="siteId"/>
+        <result column="tb_org_id" property="orgId"/>
+        <result column="tb_company_id" property="companyId"/>
+        <result column="tb_enable_remind_mail" property="enableRemindMail"/>
+        <result column="tb_enable_remind_app" property="enableRemindApp"/>
+        <result column="tb_mail_remind_template_id" property="mailRemindTemplateId"/>
+        <result column="tb_app_remind_template_id" property="appRemindTemplateId"/>
+        <result column="tb_remind_content" property="remindContent"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        tb
+        .
+        id
+        AS tb_id,
+      tb.training_project_id AS tb_training_project_id,
+      tb.name AS tb_name,
+      tb.start_time AS tb_start_time,
+      tb.end_time AS tb_end_time,
+      tb.sort AS tb_sort,
+      tb.deleted AS tb_deleted,
+      tb.create_by_id AS tb_create_by_id,
+      tb.create_by_name AS tb_create_by_name,
+      tb.create_time AS tb_create_time,
+      tb.update_by_id AS tb_update_by_id,
+      tb.update_by_name AS tb_update_by_name,
+      tb.update_time AS tb_update_time,
+      tb.site_id AS tb_site_id,
+      tb.org_id AS tb_org_id,
+      tb.company_id AS tb_company_id,
+      tb.enable_remind_mail AS tb_enable_remind_mail,
+      tb.enable_remind_app AS tb_enable_remind_app,
+      tb.mail_remind_template_id AS tb_mail_remind_template_id,
+      tb.app_remind_template_id AS tb_app_remind_template_id,
+      tb.remind_content AS tb_remind_content
+    </sql>
+
+    <update id="deleteByIds">
+        update tp_plan
+        set
+        deleted = 1,
+        update_by_id = #{accountId},
+        update_by_name = #{accountName},
+        update_time = #{now}
+        where id in
+        (<foreach collection="ids" item="item" separator=",">#{item}</foreach>)
+    </update>
+
+    <select id="getIdsByTpIds" resultType="java.lang.Long">
+        select id
+        from tp_plan
+        where training_project_id in
+        (<foreach collection="tpIds" separator="," item="item">#{item}</foreach>)
+        and deleted = 0
+    </select>
+
+    <select id="getIdsByTpId" resultType="java.lang.Long">
+        select id
+        from tp_plan
+        where training_project_id = #{tpId}
+          and deleted = 0
+    </select>
+
+    <select id="getIdsByActivityId" resultType="java.lang.Long">
+        select distinct tb.id
+        from tp_plan tb
+        left join tp_plan_activity tpa on tpa.tp_plan_id = tb.id
+        where tpa.relation_id = #{activityId} and tb.site_id = #{siteId}
+        <if test="now != null">
+            and <![CDATA[ DATE_FORMAT(tb.start_time, '%Y-%m-%d') <= DATE_FORMAT(#{now}, '%Y-%m-%d') and DATE_FORMAT(tb.end_time, '%Y-%m-%d') >= DATE_FORMAT(#{now}, '%Y-%m-%d')
+
+        ]]>
+        </if>
+
+    </select>
+
+    <select id="getTpIdsByPlanIds" resultType="java.lang.Long">
+        select distinct training_project_id
+        from tp_plan
+        where id in
+        (<foreach collection="planIds" separator="," item="item">#{item}</foreach>)
+        and deleted = 0
+    </select>
+
+    <select id="getFinishedActivityCountByPlanId" resultType="java.lang.Integer">
+        select count(tsar.relation_id)
+        from tp_student_activity_record tsar
+                 left join tp_plan_activity tpa on tpa.relation_id = tsar.relation_id and tpa.tp_plan_id = #{planId}
+        where tpa.tp_plan_id = #{planId}
+          and tsar.account_id = #{accountId}
+    </select>
+
+    <select id="getNames" resultType="java.lang.String">
+        select name
+        from tp_plan
+        where id in
+        <foreach collection="ids" item="item" open="(" close=")" separator=",">#{item}</foreach>
+        <if test="besideIds != null and besideIds.size > 0">
+            and id not in
+            <foreach collection="besideIds" item="item" open="(" close=")" separator=",">#{item}</foreach>
+        </if>
+    </select>
+
+    <select id="getPrePlanNames" resultType="java.lang.String">
+        select tp.name
+        from tp_plan tp
+        left join tp_plan_condition_pre tpcp on tp.id = tpcp.pre_plan_id
+        where tpcp.plan_id = #{planId}
+        <if test="finishedPlanIds != null and finishedPlanIds.size > 0">
+            and tp.id not in
+            <foreach collection="finishedPlanIds" item="item" open="(" close=")" separator=",">#{item}</foreach>
+        </if>
+    </select>
+
+    <select id="finishedList" resultType="com.yizhi.training.application.vo.manage.TpPlanFinishedListVo">
+        SELECT a.id                       as TpPlanId,
+               a.`name`                   as TpPlanName,
+               IFNULL(max(b.finished), 0) as pass,
+               IFNULL(max(b.finished), 2) as state,
+               min(b.finish_date)         as finishDate,
+               a.start_time               as startTime,
+               a.end_time                 as endTime
+        FROM tp_plan a
+                 LEFT JOIN tp_student_plan_record b ON a.id = b.tp_plan_id and b.account_id = #{accountId}
+        WHERE a.training_project_id = #{projectId}
+          and a.company_id = #{companyId}
+          and a.site_id = #{siteId}
+          and a.deleted = 0
+        group by a.id
+        order by a.create_time desc
+    </select>
+    <select id="geTpPlan" resultType="com.yizhi.training.application.vo.manage.TpPlanFinishedVo">
+        SELECT a.id                           as TpPlanId,
+               a.`name`,
+               b.num,
+               b.tp_plan_activity_relation_id as relationId,
+               CASE
+                   WHEN NOW() >= a.start_time AND a.end_time >= NOW()
+                       THEN TRUE
+                   ELSE FALSE
+                   END
+                                              as tpPlanINTime
+
+        FROM tp_plan a
+                 LEFT JOIN tp_plan_condition_post b ON a.id = b.tp_plan_id
+            and a.id = #{tpPlanId}
+
+        WHERE a.id = #{tpPlanId}
+    </select>
+
+    <select id="getSort" resultType="com.yizhi.training.application.domain.TpPlan">
+        select id, sort from tp_plan
+        where site_id = #{siteId} and deleted = 0 and training_project_id = #{trainingId}
+        <!--上移-->
+        <if test="type==1">
+            and sort &lt;(select sort from tp_plan where site_id = #{siteId} and deleted = 0 and id = #{id} and
+            training_project_id = #{trainingId})
+            order by sort desc
+            limit 1 
+        </if>
+        <if test="type==2">
+            and sort &gt;(select sort from tp_plan where site_id = #{siteId} and deleted = 0 and id = #{id} and
+            training_project_id = #{trainingId})
+            order by sort
+            limit 1 
+        </if>
+    </select>
+
+</mapper>

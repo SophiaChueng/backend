@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.PdsProjectStudyRecordeMapper">
+    <!-- 通用查询映射结果 -->
+    <resultMap id="RankResultMap" type="com.yizhi.training.application.vo.PdsProjectStudyRecordeVo">
+        <id column="uid" property="uid"/>
+        <result column="pid" property="pid"/>
+        <result column="period" property="period"/>
+        <result column="head_portrait" property="headPortrait"/>
+        <result column="rank" property="rank"/>
+    </resultMap>
+
+    <select id="studyPeriodRankingList" parameterType="com.yizhi.training.application.vo.manage.StudyPlanProjectVo"
+            resultMap="RankResultMap">
+
+        SELECT s.uid,s.pid, s.period,s.head_portrait, rank FROM
+        (SELECT sc.uid, sc.pid, sc.period, sc.head_portrait,
+        <![CDATA[
+        CASE
+        when @prevRank < sc.period then @incRank:=1
+        else @incRank := @incRank + 1
+        END as nextRank,
+        @curRank := IF(@prevRank = sc.period, @curRank, @incRank) AS rank,
+        @prevRank := sc.period
+        FROM pds_project_study_recorde sc, (
+        SELECT @curRank :=0, @prevRank := NULL, @incRank := 0
+        ) r
+        ]]>
+        WHERE sc.company_id = #{companyId} AND sc.site_id = #{siteId} AND sc.period > 0
+        <if test="pid != null">
+            AND sc.pid = #{pid}
+        </if>
+        ORDER BY sc.period desc) s
+        <if test="uid != null and uid > 0">
+            WHERE s.uid = #{uid}
+        </if>
+
+    </select>
+</mapper>

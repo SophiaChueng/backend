@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.TpCommentMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yizhi.training.application.domain.TpComment">
+        <id column="tb_id" property="id"/>
+        <result column="tb_training_project_id" property="trainingProjectId"/>
+        <result column="tb_content" property="content"/>
+        <result column="tb_audit_status" property="auditStatus"/>
+        <result column="tb_auditor_id" property="auditorId"/>
+        <result column="tb_audit_content" property="auditContent"/>
+        <result column="tb_auditor_time" property="auditorTime"/>
+        <result column="tb_create_by_id" property="createById"/>
+        <result column="tb_create_by_name" property="createByName"/>
+        <result column="tb_create_time" property="createTime"/>
+        <result column="tb_site_id" property="siteId"/>
+        <result column="tb_org_id" property="orgId"/>
+        <result column="tb_company_id" property="companyId"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        tb
+        .
+        id
+        AS tb_id,
+      tb.training_project_id AS tb_training_project_id,
+      tb.content AS tb_content,
+      tb.audit_status AS tb_audit_status,
+      tb.auditor_id AS tb_auditor_id,
+      tb.audit_content AS tb_audit_content,
+      tb.auditor_time AS tb_auditor_time,
+      tb.create_by_id AS tb_create_by_id,
+      tb.create_by_name AS tb_create_by_name,
+      tb.create_time AS tb_create_time,
+      tb.site_id AS tb_site_id,
+      tb.org_id AS tb_org_id,
+      tb.company_id AS tb_company_id
+    </sql>
+
+    <resultMap id="VoResultMap" type="com.yizhi.training.application.vo.manage.PageCommentVo">
+        <id column="id" property="id"/>
+        <id column="create_by_id" property="accountId"/>
+        <id column="create_by_name" property="commentator"/>
+        <id column="content" property="content"/>
+        <id column="create_time" property="createTime"/>
+        <id column="user_avatar" property="userAvatar"/>
+        <id column="status" property="status"/>
+        <id column="replys" property="replys"/>
+        <id column="thumbsUp" property="thumbsUps"/>
+        <id column="state" property="state"/>
+    </resultMap>
+
+    <!-- 培训项目 评论分页  -->
+    <select id="searchPage" resultMap="VoResultMap">
+        SELECT
+        a.id,
+        a.create_by_id,
+        a.create_by_name,
+        a.thumbsUp,
+        a.content,
+        a.create_time,
+        a.user_avatar,
+        a.STATUS,
+        COUNT(r.id) AS replys,
+        a.state
+        FROM
+        (
+        SELECT
+        b.`id`,
+        b.`create_by_id`,
+        b.`create_by_name`,
+        b.`create_time`,
+        b.`content`,
+        b.user_avatar,
+        COUNT(tu.id) AS thumbsUp,
+        b.STATUS,
+        b.state
+        FROM
+        (
+        SELECT
+        c.`id`,
+        c.`create_by_id`,
+        c.`create_by_name`,
+        c.`create_time`,
+        c.`content`,
+        c.user_avatar,
+        (
+        CASE
+        WHEN COUNT(tuu.`id`) > 0 THEN
+        1
+        ELSE
+        0
+        END
+        ) AS STATUS,
+        c.state
+        FROM
+        tp_comment c
+        LEFT JOIN tp_comment_thumbs_up tuu ON c.`id` = tuu.`tp_comment_id`
+        AND tuu.`account_id` = #{accountId}
+        WHERE
+        c.`training_project_id` = #{trainingProjectId}
+        AND c.`audit_status` = 0
+        <if test="type != 0 ">
+            and c.state=0
+        </if>
+        GROUP BY
+        c.`id`
+        ) b
+        LEFT JOIN tp_comment_thumbs_up tu ON b.id = tu.tp_comment_id
+        GROUP BY
+        b.id
+        ) a
+        LEFT JOIN tp_comment_reply r ON a.id = r.`tp_comment_id`
+        GROUP BY
+        a.id
+        ORDER BY
+        a.create_time DESC
+    </select>
+
+    <select id="searchPageCount" resultType="java.lang.Integer">
+        select count(1)
+        from
+        (SELECT
+        a.id
+        FROM
+        (
+        SELECT
+        b.`id`,
+        b.`create_by_id`,
+        b.`create_by_name`,
+        b.`create_time`,
+        b.`content`,
+        b.user_avatar,
+        COUNT(tu.id) AS thumbsUp,
+        b. STATUS,
+        b.state
+        FROM
+        (
+        SELECT
+        c.`id`,
+        c.`create_by_id`,
+        c.`create_by_name`,
+        c.`create_time`,
+        c.`content`,
+        c.user_avatar,
+        c.state,
+        (
+        CASE
+        WHEN COUNT(tuu.`id`) > 0 THEN
+        1
+        ELSE
+        0
+        END
+        ) AS STATUS
+        FROM
+        tp_comment c
+        LEFT JOIN tp_comment_thumbs_up tuu ON c.`id` = tuu.`tp_comment_id`
+        AND tuu.`account_id` = #{accountId}
+        WHERE
+        c.`training_project_id` = #{trainingProjectId}
+        AND c.`audit_status` = 0
+        <if test="type != 0 ">
+            and c.state=0
+        </if>
+        GROUP BY
+        c.`id`
+        ) b
+        LEFT JOIN tp_comment_thumbs_up tu ON b.id = tu.tp_comment_id
+        GROUP BY
+        b.id
+        ) a
+        LEFT JOIN tp_comment_reply r ON a.id = r.`tp_comment_id`
+        GROUP BY a.id) tb
+    </select>
+
+    <select id="getList" resultMap="VoResultMap">
+        SELECT a.id,
+               a.create_by_id,
+               a.create_by_name,
+               a.thumbsUp,
+               a.content,
+               a.create_time,
+               a.user_avatar,
+               a.STATUS,
+               COUNT(r.id) AS replys,
+               a.state
+        FROM (SELECT b.`id`,
+                     b.`create_by_id`,
+                     b.`create_by_name`,
+                     b.`create_time`,
+                     b.`content`,
+                     b.user_avatar,
+                     COUNT(tu.id) AS thumbsUp,
+                     b.STATUS,
+                     b.state
+              FROM (SELECT c.`id`,
+                           c.`create_by_id`,
+                           c.`create_by_name`,
+                           c.`create_time`,
+                           c.`content`,
+                           c.user_avatar,
+                           (
+                               CASE
+                                   WHEN COUNT(tuu.`id`) > 0 THEN
+                                       1
+                                   ELSE
+                                       0
+                                   END
+                               ) AS STATUS,
+                           c.state
+                    FROM tp_comment c
+                             LEFT JOIN tp_comment_thumbs_up tuu ON c.`id` = tuu.`tp_comment_id`
+                        AND tuu.`account_id` = #{accountId}
+                    WHERE c.`training_project_id` = #{trainingProjectId}
+                      AND c.`audit_status` = 0
+                    GROUP BY c.`id`) b
+                       LEFT JOIN tp_comment_thumbs_up tu ON b.id = tu.tp_comment_id
+              GROUP BY b.id) a
+                 LEFT JOIN tp_comment_reply r ON a.id = r.`tp_comment_id`
+        GROUP BY a.id
+        ORDER BY a.create_time DESC
+    </select>
+    <!-- 培训项目 评论分页  结束-->
+</mapper>

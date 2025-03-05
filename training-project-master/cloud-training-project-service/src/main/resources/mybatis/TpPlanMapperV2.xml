@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.v2.mapper.TpPlanMapperV2">
+
+    <update id="addTpSort">
+        UPDATE `tp_plan`
+        SET `sort` = `sort` + 1
+        WHERE `training_project_id` = #{trainingProjectId}
+          AND `directory_item_id` = #{directoryItemId}
+          AND `sort` &gt;= #{sort}
+          AND `deleted` = 0
+    </update>
+
+    <update id="deleteBatch">
+        UPDATE `tp_plan`
+        SET `update_by_id` = #{accountId} ,
+        `update_by_name` = #{accountName},
+        `update_time` = #{now},
+        `deleted` = 1
+        <where>
+            `id` IN
+            <foreach collection="ids" separator="," open="(" close=")" item="item">
+                #{item}
+            </foreach>
+        </where>
+    </update>
+
+    <update id="updateDirectoryItemId">
+        UPDATE `tp_plan`
+        SET `directory_item_id` = #{directoryItemId}
+        <where>
+            `training_project_id` = #{trainingProjectId}
+            AND `directory_item_id` = #{oldDirectoryItemId}
+            AND `deleted` = 0
+        </where>
+    </update>
+
+    <select id="getMaxSort" resultType="java.lang.Integer">
+        SELECT MAX(`sort`)
+        FROM `tp_plan`
+        <where>
+            `training_project_id` = #{trainingProjectId}
+            AND `directory_item_id` = #{directoryItemId}
+            AND `deleted` = 0
+        </where>
+    </select>
+
+
+    <select id="getTpPlanIdsByItem" resultType="java.lang.Long">
+        SELECT id
+        FROM `tp_plan`
+        WHERE `training_project_id` = #{trainingProjectId}
+          AND `directory_item_id` = #{directoryItemId}
+          AND `deleted` = 0
+    </select>
+    <select id="getMaxStudyTimePlanId"
+            resultType="java.lang.Long">
+        select p.tp_plan_id
+        from tp_plan_activity p
+                 left join tp_plan_activity_view_record r on r.tp_plan_activity_id = p.id
+        where p.training_project_id = #{tpId}
+          and r.training_project_id = #{tpId}
+          and r.account_id = #{accountId}
+          and r.site_id = #{siteId}
+          and p.deleted = 0
+        group by p.tp_plan_id
+        order by max(r.time) desc limit 1
+    </select>
+
+    <select id="getTpPlansOrderByDir" resultType="com.yizhi.training.application.domain.TpPlan">
+        SELECT pl.*
+        FROM `tp_plan` pl
+        INNER JOIN `tp_study_directory` tsd
+        ON pl.`training_project_id` = tsd.`training_project_id`
+        AND pl.`directory_item_id` = tsd.`id`
+        WHERE pl.`deleted` = 0
+        AND tsd.`deleted` = 0
+        AND pl.`id` IN
+        <foreach collection="tpPlanIds" item="tpPlanId" open="(" close=")" separator=",">#{tpPlanId}</foreach>
+        ORDER BY tsd.`sort` ASC, pl.`sort` ASC
+    </select>
+
+    <select id="getTpPlansByTpOrderByDir" resultType="com.yizhi.training.application.domain.TpPlan">
+        SELECT pl.*
+        FROM `tp_plan` pl
+                 INNER JOIN `tp_study_directory` tsd
+                            ON pl.`training_project_id` = tsd.`training_project_id`
+                                AND pl.`directory_item_id` = tsd.`id`
+        WHERE pl.`deleted` = 0
+          AND tsd.`deleted` = 0
+          AND pl.`training_project_id` = #{trainingProjectId}
+        ORDER BY tsd.`sort` ASC, pl.`sort` ASC
+    </select>
+</mapper>

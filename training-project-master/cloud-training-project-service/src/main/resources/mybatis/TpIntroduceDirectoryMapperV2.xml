@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.v2.mapper.TpIntroduceDirectoryMapperV2">
+    <update id="deleteBatchByTpIds">
+        UPDATE `tp_introduce_directory`
+        SET `deleted` = 1
+        WHERE `training_project_id` IN
+        <foreach collection="tpIds" item="tpId" open="(" close=")" separator=",">
+            #{tpId}
+        </foreach>
+    </update>
+
+    <update id="deleteByStudyItem">
+        UPDATE `tp_introduce_directory`
+        SET `deleted` = 1
+        WHERE `training_project_id` = #{trainingProjectId}
+          AND `item_id` = #{studyDirItemId}
+    </update>
+
+    <delete id="deleteByItemId">
+        UPDATE `tp_introduce_directory`
+        SET `deleted` = 1
+        WHERE `training_project_id` = #{trainingProjectId}
+          AND `id` = #{directoryItemId}
+    </delete>
+
+    <!-- 3（评论）和8（咨询）不能移动顺序，所以排除出正常排序之外-->
+    <select id="getMaxSort" resultType="java.lang.Integer">
+        SELECT MAX(`sort`)
+        FROM `tp_introduce_directory`
+        WHERE `training_project_id` = #{trainingProjectId}
+          AND `item_type` NOT IN (3, 8)
+          AND `deleted` = 0
+    </select>
+
+    <!-- 3（评论）和8（咨询）不能移动顺序-->
+    <update id="updateSortValue">
+        UPDATE `tp_introduce_directory`
+        SET `sort` = `sort` + 1
+        WHERE `training_project_id` = #{trainingProjectId}
+          AND `item_type` NOT IN (3, 8)
+          AND `deleted` = 0
+          AND `sort` &gt;= #{sort}
+    </update>
+
+</mapper>

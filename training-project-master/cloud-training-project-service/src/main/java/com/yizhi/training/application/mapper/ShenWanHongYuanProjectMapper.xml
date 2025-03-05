@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.ShenWanHongYuanProjectMapper">
+    <resultMap type="com.yizhi.training.application.vo.manage.StudyPlanProjectVo" id="projectMap">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="logo_img" property="logoImg"/>
+        <collection property="plans" ofType="com.yizhi.training.application.vo.manage.TpPlanVo"
+                    column="trainingProjectId">
+            <id column="bid" property="trainingProjectId"/>
+            <result column="bname" property="name"/>
+            <collection property="activities" ofType="com.yizhi.training.application.vo.manage.TpPlanActivityVo">
+                <result column="cname" property="name"/>
+                <result column="caddress" property="address"/>
+                <result column="ctype" property="type"/>
+                <result column="crelationId" property="relationId"/>
+            </collection>
+        </collection>
+    </resultMap>
+
+    <resultMap type="com.yizhi.training.application.vo.manage.StudyPlanProjectVo" id="projectAccountMap">
+        <id column="accountId" property="accountId"/>
+        <result column="studyPlanCode" property="studyPlanCode"/>
+        <result column="accountId" property="accountId"/>
+        <result column="studyStartTime" property="studyStartTime"/>
+        <result column="completionStatus" property="completionStatus"/>
+        <result column="completionTime" property="completionTime"/>
+        <collection property="plans" ofType="com.yizhi.training.application.vo.manage.TpPlanVo"
+                    column="trainingProjectId">
+            <id column="bid" property="trainingProjectId"/>
+            <result column="bname" property="name"/>
+            <collection property="activities" ofType="com.yizhi.training.application.vo.manage.TpPlanActivityVo">
+                <result column="cname" property="name"/>
+                <result column="caddress" property="address"/>
+                <result column="ctype" property="type"/>
+                <result column="sort" property="sort"/><!-- 完成状态 -->
+                <result column="crelationId" property="relationId"/>
+            </collection>
+        </collection>
+    </resultMap>
+
+
+    <select id="swhyStudyplanAll" parameterType="com.yizhi.training.application.vo.manage.StudyPlanProjectVo"
+            resultMap="projectMap">
+        SELECT a.id,
+               a.NAME,
+               IFNULL(a.logo_img, '') AS logo_img,
+               b.id                   AS bid,
+               b.NAME                 AS bname,
+               c.id                   AS cid,
+               c.type                 as ctype,
+               c.relation_id          AS crelationId,
+               c.name                 AS cname,
+               c.address              AS caddress
+        FROM training_project a
+                 LEFT JOIN tp_plan b ON a.id = b.training_project_id
+                 LEFT JOIN tp_plan_activity c ON c.tp_plan_id = b.id AND c.training_project_id = b.training_project_id
+        WHERE a.company_id = #{companyId}
+          AND a.status in (1, 2)
+        ORDER BY a.create_time, b.sort, c.sort
+    </select>
+
+    <select id="swhyRecordAccount" parameterType="com.yizhi.training.application.vo.manage.StudyPlanProjectVo"
+            resultMap="projectAccountMap">
+        SELECT a.id AS studyPlanCode,sp.account_id AS accountId,
+        CASE WHEN IFNULL(MAX(sp.finished),0) THEN DATE_FORMAT(a.start_time, '%Y-%m-%d %H:%i:%s') ELSE '' END AS
+        studyStartTime,
+        IFNULL(MAX(sp.finished),0) AS completionStatus,
+        IFNULL(DATE_FORMAT(MIN(sp.finish_date), '%Y-%m-%d %H:%i:%s'),'') AS completionTime,
+        b.id AS bid,
+        b. NAME AS bname,
+        c.id AS cid,c.type as ctype,c.relation_id AS crelationId,c.name AS cname,
+        c.address AS caddress,IFNULL(MAX(r.finished),0) AS sort
+        FROM training_project a
+        LEFT JOIN tp_plan b ON a.id = b.training_project_id
+        LEFT JOIN tp_plan_activity c ON c.tp_plan_id=b.id AND c.training_project_id=b.training_project_id
+        LEFT JOIN tp_student_project_record sp ON a.id=sp.training_project_id
+        LEFT JOIN tp_student_activity_record r ON r.relation_id=c.relation_id AND sp.account_id=r.account_id
+        WHERE a.company_id=#{companyId} AND a.status in(1,2) AND sp.account_id IS NOT NULL AND
+        sp.account_id=${accountId}
+        <if test="projectId != null">
+            AND a.id=#{projectId}
+        </if>
+        GROUP BY sp.account_id,a.id,c.relation_id
+    </select>
+
+    <select id="swhyRecordAccountToday" parameterType="com.yizhi.training.application.vo.manage.StudyPlanProjectVo"
+            resultMap="projectAccountMap">
+        SELECT a.id AS studyPlanCode,sp.account_id AS accountId,
+        CASE WHEN IFNULL(MAX(sp.finished),0) THEN DATE_FORMAT(a.start_time, '%Y-%m-%d %H:%i:%s') ELSE '' END AS
+        studyStartTime,
+        IFNULL(MAX(sp.finished),0) AS completionStatus,
+        IFNULL(DATE_FORMAT(MIN(sp.finish_date), '%Y-%m-%d %H:%i:%s'),'') AS completionTime,
+        b.id AS bid,
+        b. NAME AS bname,
+        c.id AS cid,c.type as ctype,c.relation_id AS crelationId,c.name AS cname,
+        c.address AS caddress,IFNULL(MAX(r.finished),0) AS sort
+        FROM training_project a
+        LEFT JOIN tp_plan b ON a.id = b.training_project_id
+        LEFT JOIN tp_plan_activity c ON c.tp_plan_id=b.id AND c.training_project_id=b.training_project_id AND
+        c.deleted=0
+        LEFT JOIN tp_student_project_record sp ON a.id=sp.training_project_id
+        LEFT JOIN tp_student_activity_record r ON r.relation_id=c.relation_id AND sp.account_id=r.account_id
+        WHERE a.company_id=#{companyId} AND a.status in(1,2) AND sp.account_id IS NOT NULL
+        <if test="projectId != null">
+            AND a.id=#{projectId}
+        </if>
+        <!-- AND r.finish_date &lt;=DATE_FORMAT(NOW(), '%Y-%m-%d 23:59:59') -->
+        <if test="queryDays != null">
+            AND r.finish_date >=DATE_FORMAT(date_add(NOW(), interval -${queryDays} day), '%Y-%m-%d 00:00:00') AND
+            r.finish_date &lt;=DATE_FORMAT(NOW(), '%Y-%m-%d 23:59:59')
+        </if>
+        AND sp.finished=1 AND r.finished=1
+        GROUP BY sp.account_id,a.id,c.relation_id
+        ORDER BY sp.account_id,a.id,c.relation_id
+    </select>
+
+    <select id="swhyExamRecordAccount" resultType="com.yizhi.training.application.vo.manage.StudyExamPlanProjectVo">
+        SELECT a.id AS studyPlanCode,r.account_id AS accountId,
+        IFNULL(DATE_FORMAT(MIN(r.finish_date), '%Y-%m-%d %H:%i:%s'),'') AS studyStartTime,
+        IFNULL(MAX(r.finished),0) AS completionStatus,
+        IFNULL(DATE_FORMAT(MAX(r.finish_date), '%Y-%m-%d %H:%i:%s'),'') AS completionTime,
+        b.id AS plan_activity_code,
+        b. NAME AS plan_activity_name,
+        c.relation_id AS relationId,c.name AS relationName,
+        r.score AS passed_score
+        FROM training_project a
+        LEFT JOIN tp_plan b ON a.id = b.training_project_id
+        LEFT JOIN tp_plan_activity c ON c.tp_plan_id=b.id AND c.training_project_id=b.training_project_id AND
+        c.deleted=0
+        LEFT JOIN tp_student_activity_record r ON r.relation_id=c.relation_id
+        WHERE a.company_id=#{companyId} AND a.status in(1,2) AND r.account_id IS NOT NULL
+        <if test="projectId != null">
+            AND a.id=#{projectId} AND c.tp_plan_id=#{planId} AND c.type=1 AND r.relation_id=c.relation_id
+        </if>
+        <if test="queryDays != null">
+            AND r.finish_date >=DATE_FORMAT(date_add(NOW(), interval -${queryDays} day), '%Y-%m-%d 00:00:00') AND
+            r.finish_date &lt;=DATE_FORMAT(NOW(), '%Y-%m-%d 23:59:59')
+        </if>
+        AND r.finished=1 AND r.finished=1
+        GROUP BY r.account_id,a.id,c.relation_id
+        ORDER BY r.account_id,a.id,c.relation_id
+    </select>
+
+    <select id="getProjectCourseCount" resultType="java.lang.Integer">
+        SELECT count(*)
+        FROM tp_plan_activity
+        WHERE training_project_id = #{projectId}
+          and type = 0
+          and deleted = 0
+    </select>
+
+    <select id="getProjectCourseIds" resultType="java.lang.Long">
+        SELECT relation_id
+        FROM tp_plan_activity
+        WHERE training_project_id = #{projectId}
+          and type = 0
+          and deleted = 0
+    </select>
+
+    <select id="swhyRecordAccountProgress"
+            resultType="com.yizhi.training.application.vo.manage.StudyPlanProjectProgressVo">
+        SELECT r.account_id,count(DISTINCT aa.relation_id) AS finishedCourseNum,
+        CONCAT(ROUND((count(DISTINCT aa.relation_id)/#{totalCourse})*100,2),'%') AS finishedProgress,
+        #{totalCourse} AS totalCourse,
+        <!-- CONCAT(ROUND(sum(IFNULL(seconds,0))/3600),'小时',ROUND((sum(IFNULL(seconds,0))%3600)/60),'分钟',ROUND((sum(IFNULL(seconds,0))%3600)%60),'秒') AS totalStudyHours -->
+        '' AS totalStudyHours
+        FROM tp_student_activity_record r
+        LEFT JOIN tp_plan_activity a ON r.relation_id=a.relation_id
+        LEFT JOIN tp_plan_activity aa ON r.relation_id=aa.relation_id AND r.finished=1 AND r.finished=1
+        WHERE r.site_id=#{siteId} and r.relation_id=a.relation_id
+        AND a.training_project_id=#{projectId} and a.type=0 AND a.deleted=0
+        AND aa.training_project_id=#{projectId} and aa.type=0 AND aa.deleted=0
+        <if test="queryDays != null">
+            AND r.finish_date >=DATE_FORMAT(date_add(NOW(), interval -${queryDays} day), '%Y-%m-%d 00:00:00') AND
+            r.finish_date &lt;=DATE_FORMAT(NOW(), '%Y-%m-%d 23:59:59')
+        </if>
+        AND r.account_id>0
+        GROUP BY r.account_id
+    </select>
+
+    <select id="swhyRecordAccountCourseProgress"
+            resultType="com.yizhi.training.application.vo.manage.StudyCoursePlanProgressVo">
+        SELECT r.account_id AS accountId,
+        <if test="groupType != null and groupType==2">
+            a.training_project_id AS studyPlanCode,
+            IFNULL(DATE_FORMAT(MIN(r.finish_date), '%Y-%m-%d %H:%i:%s'),'') AS studyStartTime,
+            IFNULL(MAX(r.finished),0) AS completionStatus,
+            IFNULL(DATE_FORMAT(MAX(r.finish_date), '%Y-%m-%d %H:%i:%s'),'') AS completionTime,
+            a.relation_id AS relationId,a.name AS relationName,
+        </if>
+        <!-- CONCAT(ROUND(sum(IFNULL(r.seconds,0))/3600),'小时',ROUND((sum(IFNULL(r.seconds,0))%3600)/60),'分钟',ROUND((sum(IFNULL(r.seconds,0))%3600)%60),'秒') AS totalStudyHours -->
+        '' AS totalStudyHours
+        FROM tp_student_activity_record r
+        LEFT JOIN tp_plan_activity a ON r.relation_id=a.relation_id
+        WHERE r.site_id=#{siteId} and r.relation_id=a.relation_id
+        AND a.training_project_id=#{projectId} and a.type=0 AND a.deleted=0
+        AND a.tp_plan_id = #{planId}
+        <if test="queryDays != null">
+            AND r.finish_date >=DATE_FORMAT(date_add(NOW(), interval -${queryDays} day), '%Y-%m-%d 00:00:00') AND
+            r.finish_date &lt;=DATE_FORMAT(NOW(), '%Y-%m-%d 23:59:59')
+        </if>
+        AND r.account_id>0
+        GROUP BY r.account_id
+        <if test="groupType != null and groupType==2">
+            , r.relation_id
+        </if>
+        ORDER BY r.account_id
+        <if test="groupType != null and groupType==2">
+            , r.relation_id
+        </if>
+
+    </select>
+
+    <select id="getPlanName" resultType="java.lang.String">
+        SELECT name
+        FROM tp_plan
+        where id = #{planId}
+    </select>
+
+    <select id="getProjectPlanActivityCourseIds" resultType="java.lang.Long">
+        SELECT relation_id
+        FROM tp_plan_activity
+        WHERE training_project_id = #{projectId}
+          and tp_plan_id = #{planId}
+          and type = 0
+          and deleted = 0
+    </select>
+</mapper>

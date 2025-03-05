@@ -1,0 +1,1043 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.TrainingProjectMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yizhi.training.application.domain.TrainingProject">
+        <id column="tb_id" property="id"/>
+        <result column="tb_tp_classification_id" property="tpClassificationId"/>
+        <result column="tb_name" property="name"/>
+        <result column="tb_point" property="point"/>
+        <result column="tb_logo_img" property="logoImg"/>
+        <result column="tb_start_time" property="startTime"/>
+        <result column="tb_end_time" property="endTime"/>
+        <result column="tb_status" property="status"/>
+        <result column="tb_visible_range" property="visibleRange"/>
+        <result column="tb_deleted" property="deleted"/>
+        <result column="tb_key_words" property="keyWords"/>
+        <result column="tb_description" property="description"/>
+        <result column="tb_enable_enroll" property="enableEnroll"/>
+        <result column="tb_enable_sign" property="enableSign"/>
+        <result column="tb_create_by_id" property="createById"/>
+        <result column="tb_create_by_name" property="createByName"/>
+        <result column="tb_create_time" property="createTime"/>
+        <result column="tb_update_by_id" property="updateById"/>
+        <result column="tb_update_by_name" property="updateByName"/>
+        <result column="tb_update_time" property="updateTime"/>
+        <result column="tb_site_id" property="siteId"/>
+        <result column="tb_org_id" property="orgId"/>
+        <result column="tb_company_id" property="companyId"/>
+        <result column="tb_enable_remind_mail" property="enableRemindMail"/>
+        <result column="tb_enable_remind_app" property="enableRemindApp"/>
+        <result column="tb_mail_remind_template_id" property="mailRemindTemplateId"/>
+        <result column="tb_app_remind_template_id" property="appRemindTemplateId"/>
+        <result column="tb_remind_content" property="remindContent"/>
+        <result column="tb_enable_task" property="enableTask"/>
+        <result column="tb_weight" property="weight"/>
+        <result column="pay_type" property="payType"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        DISTINCT
+            (tb.id)
+            AS tb_id,
+      tb.tp_classification_id AS tb_tp_classification_id,
+      tb.name AS tb_name,
+      tb.point AS tb_point,
+      tb.logo_img AS tb_logo_img,
+      tb.start_time AS tb_start_time,
+      tb.end_time AS tb_end_time,
+      tb.status AS tb_status,
+      tb.visible_range AS tb_visible_range,
+      tb.deleted AS tb_deleted,
+      tb.key_words AS tb_key_words,
+      tb.description AS tb_description,
+      tb.enable_enroll AS tb_enable_enroll,
+      tb.enable_sign AS tb_enable_sign,
+      tb.create_by_id AS tb_create_by_id,
+      tb.create_by_name AS tb_create_by_name,
+      tb.create_time AS tb_create_time,
+      tb.update_by_id AS tb_update_by_id,
+      tb.update_by_name AS tb_update_by_name,
+      tb.update_time AS tb_update_time,
+      tb.site_id AS tb_site_id,
+      tb.org_id AS tb_org_id,
+      tb.company_id AS tb_company_id,
+      tb.enable_remind_mail AS tb_enable_remind_mail,
+      tb.enable_remind_app AS tb_enable_remind_app,
+      tb.mail_remind_template_id AS tb_mail_remind_template_id,
+      tb.app_remind_template_id AS tb_app_remind_template_id,
+      tb.remind_content AS tb_remind_content,
+      tb.weight as tb_weight
+    </sql>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List_simple">
+        DISTINCT
+            (tb.id)
+            AS tb_id,
+      tb.name AS tb_name,
+      tb.logo_img AS tb_logo_img,
+      tb.visible_range AS tb_visible_range,
+      tb.start_time AS tb_start_time,
+      tb.end_time AS tb_end_time,
+      tb.site_id AS tb_site_id,
+      tb.org_id AS tb_org_id,
+      tb.company_id AS tb_company_id
+    </sql>
+
+    <select id="searchPage" resultMap="BaseResultMap">
+        SELECT
+        tp.`id` as tb_id,
+        tp.`logo_img` as tb_logo_img,
+        tp.`name` as tb_name,
+        tp.`start_time` as tb_start_time,
+        tp.`end_time` as tb_end_time,
+        tp.status as tb_status,
+        tp.visible_range as tb_visible_range,
+        tp.enable_enroll AS tb_enable_enroll,
+        tp.enable_sign AS tb_enable_sign
+        FROM training_project tp
+        <where>
+            <if test="tpClassificationId != null">
+                AND tp.`tp_classification_id` = #{tpClassificationId}
+            </if>
+            <if test="status != null">
+                AND tp.`status` = #{status}
+            </if>
+            <if test="companyId != null">
+                AND tp.`company_id` = #{companyId}
+            </if>
+            <if test="siteId != null">
+                AND tp.`site_id` = #{siteId}
+            </if>
+            <if test="name != null">
+                AND (tp.`name` LIKE CONCAT('%', #{name}, '%') or tp.`key_words` LIKE CONCAT('%', #{name}, '%'))
+            </if>
+            and tp.deleted = 0
+        </where>
+        ORDER BY tp.`create_time` DESC
+    </select>
+
+
+    <select id="searchFoPage" resultType="com.yizhi.training.application.vo.fo.TrainingProjectFoVo">
+        SELECT
+        tp.`id` as id,
+        tp.`logo_img` as logoImg,
+        tp.`name` as name,
+        tp.`start_time` as startTime,
+        tp.`end_time` as endTime,
+        tp.`create_time` as createTime,
+        tp.key_words as keyWords,
+        cl.name as classificationName
+        FROM training_project tp LEFT JOIN
+        tp_classification cl ON tp.tp_classification_id = cl.id
+        WHERE tp.deleted = 0 and tp.status =1
+        <if test="siteId != null">
+            AND tp.`site_id` = #{siteId}
+        </if>
+        ORDER BY tp.`create_time` DESC
+    </select>
+
+
+    <!--版本2 -->
+    <select id="searchPageV2" resultType="com.yizhi.training.application.vo.domain.TrainingProjectVo">
+        SELECT
+        tp.`id`,
+        tp.`logo_img` as logoImg,
+        tp.`name` ,
+        tp.`start_time` as startTime,
+        tp.`end_time` as endTime,
+        tp.status as status,
+        tp.visible_range as visibleRange,
+        tp.enable_enroll AS enableEnroll,
+        tp.enable_sign AS enableSign,
+        tp.enable_queue as enableQueue,
+        tp.description,
+        enroll.actual_price as actualPrice,
+        enroll.original_price as originalPrice,
+        enroll.enable_pay as enablePay,
+        enroll.pay_type as payType
+        FROM training_project tp
+        left join tr_enroll enroll on tp.id = enroll.training_project_id
+        <where>
+            tp.deleted = 0
+            <if test="enableEnroll != null">
+                and tp.enable_enroll = #{enableEnroll}
+            </if>
+            <if test="enableEnroll != null and enablePay != null">
+                and enroll.enable_pay = #{enablePay}
+            </if>
+
+            <if test="tpClassificationId != null">
+                AND tp.`tp_classification_id` = #{tpClassificationId}
+            </if>
+            <if test="status != null">
+                AND tp.`status` = #{status}
+            </if>
+            <if test="companyId != null">
+                AND tp.`company_id` = #{companyId}
+            </if>
+            <if test="siteId != null">
+                AND tp.`site_id` = #{siteId}
+            </if>
+            <if test="name != null">
+                AND (tp.`name` LIKE CONCAT('%', #{name}, '%') or tp.`key_words` LIKE CONCAT('%', #{name}, '%'))
+            </if>
+
+        </where>
+        ORDER BY tp.`create_time` DESC
+    </select>
+
+    <select id="searchPageCount" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM training_project tp
+        <where>
+            <if test="tpClassificationId != null">
+                AND tp.`tp_classification_id` = #{tpClassificationId}
+            </if>
+            <if test="status != null">
+                AND tp.`status` = #{status}
+            </if>
+            <if test="companyId != null">
+                AND tp.`company_id` = #{companyId}
+            </if>
+            <if test="siteId != null">
+                AND tp.`site_id` = #{siteId}
+            </if>
+            <if test="name != null">
+                AND (tp.`name` LIKE CONCAT('%', #{name}, '%') or tp.`key_words` LIKE CONCAT('%', #{name}, '%'))
+            </if>
+            and tp.deleted = 0
+        </where>
+    </select>
+
+
+    <select id="searchFoPageCount" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM training_project tp
+
+        WHERE tp.deleted = 0 and tp.status =1
+        <if test="siteId != null">
+            AND tp.`site_id` = #{siteId}
+        </if>
+
+    </select>
+
+    <!--
+        门户首页：培训列表
+    -->
+    <select id="apiPageListNoCondition" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from training_project tb
+        where
+        -- 首先用站点 id 和上架状态缩小范围
+        (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and
+        <![CDATA[ DATE_FORMAT(tb.end_time, '%Y-%m-%d') >= DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>)
+        and
+        -- 平台可见 或者 可见范围内的
+        (tb.visible_range = 1
+        <if test="ids != null and ids.size > 0">
+            or tb.id in
+            <foreach collection="ids" separator="," open="(" close=")" item="item">#{item}</foreach>
+        </if>
+        )
+        order by tb.start_time asc,tb.create_time desc
+    </select>
+
+    <!-- 培训项目首页列表 -->
+    <select id="apiPageList" resultType="com.yizhi.training.application.vo.domain.TrainingProjectVo">
+        select tb.*,en.enable_pay,en.actual_price,en.pay_type
+        from training_project tb
+        left join tr_enroll en on tb.id = en.training_project_id
+        where
+        -- 首先用站点 id 和上架状态缩小范围
+        (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and tb.end_time &gt;= #{now}
+        and tb.start_time &lt;= #{now})
+
+        and
+        (
+        -- 平台可见 and 不需要报名
+        (tb.visible_range = 1 and tb.enable_enroll = 0)
+        -- 指定范围，不需报名
+        <if test="visiableTpIds != null and visiableTpIds.size > 0">
+            or (tb.id in <foreach collection="visiableTpIds" open="(" close=")" separator="," item="item">#{item}
+        </foreach> and tb.enable_enroll = 0)
+        </if>
+        -- 报名通过
+        <if test="passEnrollTpIds != null and passEnrollTpIds.size > 0">
+            or (tb.id in <foreach collection="passEnrollTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+        )
+        <if test="keyword != null">
+            and (tb.key_words like concat('%', #{keyword}, '%')
+            or
+            tb.name like concat('%', #{keyword}, '%'))
+        </if>
+
+
+        <!--查询关闭报名的、或者开启报名，非付费的；或者开启报名并且开启付费并且配置显示再项目列表中； 的项目-->
+        <if test="enablePay != null and enablePay.equals(0)">
+            and (tb.enable_enroll = 0 or en.enable_pay = '0' or (tb.enable_enroll = 1 and tb.enable_queue = 1 and
+            en.enable_pay = '1') )
+        </if>
+        <!--查询开启报名并且开启付费的项目，只显示 1：虚拟币，3：虚拟币或兑换码 -->
+        <if test="enablePay != null and enablePay.equals(1)">
+            and (tb.enable_enroll = 1 and tb.enable_queue = 1 and en.enable_pay = '1' and en.pay_type in (1,3))
+        </if>
+        order by tb.start_time desc,tb.create_time desc
+    </select>
+
+    <select id="apiPageListCount" resultType="java.lang.Integer">
+        select count(1)
+        from training_project tb
+        where
+        -- 首先用站点 id 和上架状态缩小范围
+        (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and tb.end_time &gt;= #{now}
+        and tb.start_time &lt;=#{now})
+        and
+        (
+        -- 平台可见 and 不需要报名
+        (tb.visible_range = 1 and tb.enable_enroll = 0)
+        -- 指定范围，不需报名
+        <if test="visiableTpIds != null and visiableTpIds.size > 0">
+            or (tb.id in <foreach collection="visiableTpIds" open="(" close=")" separator="," item="item">#{item}
+        </foreach> and tb.enable_enroll = 0)
+        </if>
+        -- 报名通过
+        <if test="passEnrollTpIds != null and passEnrollTpIds.size > 0">
+            or (tb.id in <foreach collection="passEnrollTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+        )
+        <if test="keyword != null">
+            and (tb.key_words like concat('%', #{keyword}, '%')
+            or
+            tb.name like concat('%', #{keyword}, '%'))
+        </if>
+    </select>
+
+    <!-- 我的培训项目列表  未开始（已上架，开始时间大于当前时间）-->
+    <!-- 1.平台可见 -->
+    <!-- 2.指定学员 -->
+    <select id="selectMyCommingPage" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List_simple"/>
+        from training_project tb
+        where
+        -- 首先用站点 id 和上架状态缩小范围
+        (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and
+        <![CDATA[ DATE_FORMAT(tb.start_time, '%Y-%m-%d') > DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>)
+        and
+        (tb.visible_range = 1
+        <if test="ids != null and ids.size > 0">
+            or
+            (tb.visible_range = 0
+            and tb.id in <foreach collection="ids" open="(" close=")" separator="," item="item">#{item}</foreach>)
+        </if>
+        )
+        <if test="keyword != null and keyword != ''">
+            and (tb.key_words like concat('%', #{keyword}, '%') or tb.name like concat('%', #{keyword}, '%'))
+        </if>
+        order by tb.start_time asc,tb.create_time desc
+    </select>
+
+    <select id="selectMyCommingPageNum" resultType="java.lang.Integer">
+        select COUNT (tb.id)
+        from training_project tb
+        where
+        -- 首先用站点 id 和上架状态缩小范围
+        (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and
+        <![CDATA[ DATE_FORMAT(tb.start_time, '%Y-%m-%d') > DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>)
+        and
+        (tb.visible_range = 1
+        <if test="ids != null and ids.size > 0">
+            or
+            (tb.visible_range = 0
+            and tb.id in <foreach collection="ids" open="(" close=")" separator="," item="item">#{item}</foreach>)
+        </if>
+        )
+        <if test="keyword != null and keyword != ''">
+            and (tb.key_words like concat('%', #{keyword}, '%') or tb.name like concat('%', #{keyword}, '%'))
+        </if>
+    </select>
+    <!-- 我的培训项目列表  进行中 -->
+    <!-- 1. 已上架，开始时间大于当前时间，结束时间小于当前时间 -->
+    <!-- 2. 去除已结束
+    -->
+    <select id="selectMyJoinedPage" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List_simple"/>
+        from training_project tb
+        where
+        -- 首先用站点 id 和上架状态缩小范围
+        (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and
+        <![CDATA[ DATE_FORMAT(tb.start_time, '%Y-%m-%d') <= DATE_FORMAT(#{now}, '%Y-%m-%d')
+            and DATE_FORMAT(tb.end_time, '%Y-%m-%d') >= DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>)
+        and
+        (tb.visible_range = 1
+        <if test="visiableTpIds != null and visiableTpIds.size > 0">
+            or
+            (tb.visible_range = 0
+            and tb.id in <foreach collection="visiableTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+        )
+        <if test="finishedTpIds != null and finishedTpIds.size > 0">
+            and (tb.id not in <foreach collection="finishedTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+        <if test="keyword != null">
+            and (tb.key_words like concat('%', #{keyword}, '%') or tb.name like concat('%', #{keyword}, '%'))
+        </if>
+        order by tb.end_time asc,tb.create_time desc
+    </select>
+    <select id="selectMyJoinedPageNum" resultType="java.lang.Integer">
+        select COUNT (tb.id)
+        from training_project tb
+        where
+        -- 首先用站点 id 和上架状态缩小范围
+        (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and
+        <![CDATA[ DATE_FORMAT(tb.start_time, '%Y-%m-%d') <= DATE_FORMAT(#{now}, '%Y-%m-%d')
+            and DATE_FORMAT(tb.end_time, '%Y-%m-%d') >= DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>)
+        and
+        (tb.visible_range = 1
+        <if test="visiableTpIds != null and visiableTpIds.size > 0">
+            or
+            (tb.visible_range = 0
+            and tb.id in <foreach collection="visiableTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+        )
+        <if test="finishedTpIds != null and finishedTpIds.size > 0">
+            and (tb.id not in <foreach collection="finishedTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+        <if test="keyword != null">
+            and (tb.key_words like concat('%', #{keyword}, '%') or tb.name like concat('%', #{keyword}, '%'))
+        </if>
+
+    </select>
+
+    <!-- 我的培训项目列表  已结束 -->
+    <select id="selectMyFinishedPage" resultMap="BaseResultMap">
+        <!-- 已完成的 且 进行中的 -->
+        select
+        <include refid="Base_Column_List_simple"/>
+        FROM training_project tb
+        LEFT JOIN tp_student_project_record tspr ON tspr.training_project_id = tb.id
+        WHERE
+        tb.site_id = #{siteId}
+        and tspr.site_id = #{siteId}
+        and tspr.account_id = #{accountId}
+        and tspr.finished = 1
+        and tb.status = 1
+        and tb.start_time &lt;= #{now}
+        and tb.end_time &gt;= #{now}
+        and
+        (tb.visible_range = 1
+        <if test="visiableTpIds != null and visiableTpIds.size > 0">
+            or
+            (tb.visible_range = 0
+            and tb.id in <foreach collection="visiableTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+        )
+
+        union all
+
+        <!-- 已结束的 -->
+        select
+        <include refid="Base_Column_List_simple"/>
+        FROM training_project tb
+        WHERE
+        tb.site_id = #{siteId}
+        and tb.status = 1
+        and tb.end_time &lt; #{now}
+        and
+        (tb.visible_range = 1
+        <if test="visiableTpIds != null and visiableTpIds.size > 0">
+            or
+            (tb.visible_range = 0
+            and tb.id in <foreach collection="visiableTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+        )
+    </select>
+    <select id="selectMyFinishedPageNum" resultType="java.lang.Integer">
+        select count(*) from (
+        <!-- 已完成的 且 进行中的 -->
+        select
+        distinct tb.id
+        FROM training_project tb
+        LEFT JOIN tp_student_project_record tspr ON tspr.training_project_id = tb.id
+        WHERE
+        tb.site_id = #{siteId}
+        and tspr.site_id = #{siteId}
+        and tspr.account_id = #{accountId}
+        and tspr.finished = 1
+        and tb.status = 1
+        and tb.start_time &lt;= #{now}
+        and tb.end_time &gt;= #{now}
+        and
+        (tb.visible_range = 1
+        <if test="visiableTpIds != null and visiableTpIds.size > 0">
+            or
+            (tb.visible_range = 0
+            and tb.id in <foreach collection="visiableTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+        )
+
+        union all
+
+        <!-- 已结束的 -->
+        select
+        tb.id
+        FROM training_project tb
+        WHERE
+        tb.site_id = #{siteId}
+        and tb.status = 1
+        and tb.end_time &lt; #{now}
+        and
+        (tb.visible_range = 1
+        <if test="visiableTpIds != null and visiableTpIds.size > 0">
+            or
+            (tb.visible_range = 0
+            and tb.id in <foreach collection="visiableTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+        )
+        ) as tmp
+    </select>
+    <!-- 我的培训项目列表  已过期
+            可见范围内 and 项目结束时间<当前时间 and 未完成
+     -->
+    <select id="selectMyExpiredPage" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List_simple"/>
+        from training_project tb
+        where
+        -- 站点、状态、大于当前时间
+        (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and
+        <![CDATA[ tb.end_time < DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>)
+        and
+        -- 可见范围内
+        (tb.visible_range = 1
+        <if test="visiableTpIds != null and visiableTpIds.size > 0">
+            or
+            (tb.visible_range = 0
+            and tb.id in <foreach collection="visiableTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+        )
+        -- 未完成
+        <if test="finishedTpIds != null and finishedTpIds.size > 0">
+            and (tb.id not in <foreach collection="finishedTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+
+    </select>
+
+    <!-- 查询参加人数
+            1.需要报名的培训项目已经报名的人数
+            2.不需要报名-可见范围是指定学员
+     -->
+    <select id="selectEnrollPassNum" resultType="java.lang.Integer">
+        select count(1)
+        from tp_student_enroll_passed tb
+        where tb.training_project_id = #{projectId}
+    </select>
+
+    <select id="getMyTrainingProjectCountNum" resultType="java.lang.Integer">
+        select count(1)
+        from training_project tb
+        where
+        -- 首先用站点 id 和上架状态缩小范围
+        (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and
+        <![CDATA[ DATE_FORMAT(tb.end_time, '%Y-%m-%d') >= DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>)
+        and
+        (tb.visible_range = 1
+        <if test="ids != null and ids.size > 0">
+            or
+            (tb.visible_range = 0
+            and tb.id in <foreach collection="ids" open="(" close=")" separator="," item="item">#{item}</foreach>)
+        </if>
+        )
+        <if test="finishedTpIds != null and finishedTpIds.size > 0">
+            and (tb.id not in <foreach collection="finishedTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+    </select>
+
+    <!-- 火热报名 -->
+    <resultMap id="hotEnrollListVo" type="com.yizhi.training.application.vo.api.HotEnrollListVo">
+        <result column="tb_training_projectId" property="trainingProjectId"/>
+        <result column="tb_name" property="tpName"/>
+        <result column="tb_logo_img" property="tpLogoImg"/>
+        <result column="en_id" property="enrollId"/>
+        <result column="en_start_time" property="enrollStartTime"/>
+        <result column="en_end_time" property="enrollEndTime"/>
+        <result column="enable_pay" property="enablePay"/>
+    </resultMap>
+    <!--火热报名 -->
+    <select id="apiHotPageList" resultMap="hotEnrollListVo">
+        select
+        tb.id as tb_training_projectId, tb.name as tb_name, tb.logo_img as tb_logo_img,
+        en.id as en_id, en.start_time as en_start_time, en.end_time as en_end_time,en.enable_pay,
+        en.pay_type as payType
+        from training_project tb
+        left join tr_enroll en on tb.id = en.training_project_id
+        where
+        -- 首先用站点 id 和上架状态缩小范围
+        (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and tb.enable_enroll = 1)
+        <!--查询全部；包含付费和免费 -->
+        <if test="enablePay != null and enablePay.equals(0)">
+            and (en.enable_pay = '0' or (tb.enable_queue = 1 and en.enable_pay = '1') )
+        </if>
+        <!--查询付费的报名,只看1：虚拟币，3：虚拟币或兑换码 -->
+        <if test="enablePay != null and enablePay.equals(1)">
+            and (tb.enable_queue = 1 and en.enable_pay = '1' and en.pay_type in (1,3))
+        </if>
+        and (
+        -- 可见范围之内的 或者 平台用户可见的
+        tb.visible_range = 1
+        <if test="visiableTpIds != null and visiableTpIds.size > 0">
+            or tb.id in (<foreach collection="visiableTpIds" separator="," item="item">#{item}</foreach>)
+        </if>
+        )
+        <if test="passIds != null and passIds.size > 0">
+            -- 去除已经报名的
+            and tb.id not in (<foreach collection="passIds" separator="," item="item">#{item}</foreach>)
+        </if>
+        and (<![CDATA[ DATE_FORMAT(#{now}, '%Y-%m-%d') >= DATE_FORMAT(en.start_time, '%Y-%m-%d') ]]>
+        and <![CDATA[ DATE_FORMAT(en.end_time, '%Y-%m-%d') >= DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>)
+        order by tb.start_time desc,tb.create_time desc
+    </select>
+    <select id="apiHotPageListNum" resultType="java.lang.Integer">
+        select
+        count(distinct (tb.id))
+        from training_project tb
+        left join tr_enroll en on tb.id = en.training_project_id
+        where
+        -- 首先用站点 id 和上架状态缩小范围
+        (tb.site_id = #{siteId} and tb.status = 1 and tb.enable_enroll = 1)
+        <if test="visiableTpIds != null and visiableTpIds.size > 0">
+            -- 可见范围之内的 或者 平台用户可见的
+            and (tb.id in (<foreach collection="visiableTpIds" separator="," item="item">#{item}</foreach>) or
+            tb.visible_range = 1)
+        </if>
+        <if test="passIds != null and passIds.size > 0">
+            -- 去除已经报名的
+            and tb.id not in (<foreach collection="passIds" separator="," item="item">#{item}</foreach>)
+        </if>
+        and (<![CDATA[ DATE_FORMAT(#{now}, '%Y-%m-%d') >= DATE_FORMAT(en.start_time, '%Y-%m-%d') ]]>
+        and <![CDATA[ DATE_FORMAT(en.end_time, '%Y-%m-%d') >= DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>)
+
+    </select>
+    <update id="batchDelete">
+        update training_project
+        set deleted = 1,
+        update_by_id = #{accountId},
+        update_by_name = #{accountName},
+        update_time = #{now}
+        where id in
+        (<foreach collection="ids" item="item" separator=",">#{item}</foreach>)
+    </update>
+
+    <select id="getvisibileBySiteIdAndBetweenTime" resultType="com.yizhi.training.application.domain.TrainingProject">
+        select *
+        from training_project
+        where site_id = #{siteId}
+          and <![CDATA[ start_time <= #{startDate} ]]>
+        and <![CDATA[ end_time >= #{endDate} ]]>
+        and deleted = 0
+          and status = 1
+          and visibile_range = 1
+    </select>
+
+    <select id="getList" resultType="com.yizhi.training.application.domain.TrainingProject">
+        select *
+        from training_project
+        where id in
+        <foreach collection="ids" item="id" index="index" open="(" close=")" separator=",">#{id}</foreach>
+    </select>
+
+
+    <select id="queryTrainingListByRelationIds" resultMap="BaseResultMap">
+
+        select
+        <include refid="Base_Column_List"/>
+        from
+        (
+        select * from training_project as a
+        where a.`status`=1 and a.deleted=0 and a.visible_range=1 and a.site_id=#{siteId}
+        <if test="relationIds!=null and relationIds.size()>0">
+            union
+            select a.* from training_project as a right join tp_authorization_range as b on a.id=b.biz_id and b.deleted
+            = 0
+            where a.`status`=1 and a.deleted=0 and a.visible_range=0 and a.site_id=#{siteId} and b.relation_id in
+            <foreach collection="relationIds" item="relationId" index="index" open="(" close=")" separator=",">
+                #{relationId}
+            </foreach>
+            group by a.id
+        </if>
+        )
+        as tb
+        <if test="listIds!=null and listIds.size()>0">
+            where tb.id not in
+            <foreach collection="listIds" item="id" index="index" open="(" close=")" separator=",">
+                #{id}
+            </foreach>
+        </if>
+        order by create_time desc limit #{num}
+    </select>
+
+
+    <select id="selectMyCommingCount" resultType="java.lang.Integer">
+        select count(1)
+        from training_project tb
+        where
+        -- 首先用站点 id 和上架状态缩小范围
+        (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and
+        <![CDATA[ DATE_FORMAT(tb.start_time, '%Y-%m-%d') > DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>)
+        and
+        (tb.visible_range = 1
+        <if test="ids != null and ids.size > 0">
+            or
+            (tb.visible_range = 0
+            and tb.id in <foreach collection="ids" open="(" close=")" separator="," item="item">#{item}</foreach>)
+        </if>
+        )
+        <if test="keyword != null and keyword != ''">
+            and (tb.key_words like concat('%', #{keyword}, '%') or tb.name like concat('%', #{keyword}, '%'))
+        </if>
+        order by tb.start_time asc
+    </select>
+
+    <select id="selectMyJoinedCount" resultType="java.lang.Integer">
+        select count(1)
+        from training_project tb
+        where
+        -- 首先用站点 id 和上架状态缩小范围
+        (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and
+        <![CDATA[ DATE_FORMAT(tb.start_time, '%Y-%m-%d') <= DATE_FORMAT(#{now}, '%Y-%m-%d')
+            and DATE_FORMAT(tb.end_time, '%Y-%m-%d') >= DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>)
+        and
+        (tb.visible_range = 1
+        <if test="visiableTpIds != null and visiableTpIds.size > 0">
+            or
+            (tb.visible_range = 0
+            and tb.id in <foreach collection="visiableTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+        )
+        <if test="finishedTpIds != null and finishedTpIds.size > 0">
+            and (tb.id not in <foreach collection="finishedTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+        <if test="keyword != null">
+            and (tb.key_words like concat('%', #{keyword}, '%') or tb.name like concat('%', #{keyword}, '%'))
+        </if>
+        order by tb.end_time asc
+    </select>
+
+    <select id="selectMyFinishedCount" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM training_project tb
+                 LEFT JOIN tp_student_project_record tspr ON tspr.training_project_id = tb.id
+        WHERE tb.site_id = #{siteId}
+
+          AND tspr.site_id = #{siteId}
+
+          AND tspr.account_id = #{accountId}
+
+          AND tspr.finished = 1
+          AND tb.STATUS = 1
+    </select>
+
+
+    <select id="selectMyExpiredCount" resultType="java.lang.Integer">
+        select count(1)
+        from training_project tb
+        where
+        -- 站点、状态、大于当前时间
+        (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and
+        <![CDATA[ tb.end_time < DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>)
+        and
+        -- 可见范围内
+        (tb.visible_range = 1
+        <if test="visiableTpIds != null and visiableTpIds.size > 0">
+            or
+            (tb.visible_range = 0
+            and tb.id in <foreach collection="visiableTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+        )
+        -- 未完成
+        <if test="finishedTpIds != null and finishedTpIds.size > 0">
+            and (tb.id not in <foreach collection="finishedTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+    </select>
+
+
+    <select id="getTrainingList" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from training_project tb
+        where
+        (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and
+        <![CDATA[ DATE_FORMAT(tb.end_time, '%Y-%m-%d') >= DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>)
+        <if test="ids != null and ids.size > 0">
+            and tb.id in
+            <foreach collection="ids" separator="," open="(" close=")" item="item">#{item}</foreach>
+        </if>
+    </select>
+
+    <select id="getAllSiteIds" resultType="java.lang.Long">
+        select site_id
+        from training_project
+        GROUP BY site_id
+    </select>
+
+    <select id="getCaseLibraryProject" resultType="com.yizhi.training.application.domain.TrainingProject">
+        select * from training_project
+        where id in
+        <foreach collection="idList" separator="," open="(" close=")" item="item">#{item}</foreach>
+    </select>
+
+    <select id="getCaseLibraryRangeProjects" resultType="com.yizhi.training.application.domain.TrainingProject">
+        select tb.id,tb.`name`,tb.end_time
+        from training_project tb
+        where
+        -- 首先用站点 id 和上架状态缩小范围
+        (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and
+        <![CDATA[ DATE_FORMAT(tb.start_time, '%Y-%m-%d HH:mm:ss') <= DATE_FORMAT(#{date}, '%Y-%m-%d HH:mm:ss') ]]>)
+        and
+        (
+        -- 平台可见 and 不需要报名
+        (tb.visible_range = 1 and tb.enable_enroll = 0)
+        -- 指定范围，不需报名
+        <if test="visiableTpIds != null and visiableTpIds.size > 0">
+            or (tb.id in <foreach collection="visiableTpIds" open="(" close=")" separator="," item="item">#{item}
+        </foreach> and tb.enable_enroll = 0)
+        </if>
+        -- 报名通过
+        <if test="passEnrollTpIds != null and passEnrollTpIds.size > 0">
+            or (tb.id in <foreach collection="passEnrollTpIds" open="(" close=")" separator="," item="item">
+            #{item}</foreach>)
+        </if>
+        )
+
+        order by tb.end_time
+    </select>
+
+    <!--  获取培训项目下的id集合  -->
+    <select id="allTpBySiteId" resultType="com.yizhi.training.application.domain.TrainingProject">
+        select id, visible_range as visibleRange
+        from training_project
+        where site_id = #{siteId}
+          and deleted = 0
+          and status = 1
+          and <![CDATA[ DATE_FORMAT(end_time, '%Y-%m-%d') >= DATE_FORMAT(#{startDate}, '%Y-%m-%d') ]]>
+         and <![CDATA[ DATE_FORMAT(start_time, '%Y-%m-%d') <= DATE_FORMAT(#{endDate}, '%Y-%m-%d')
+        ]]>
+    </select>
+
+    <!--  获取应该参加人数  -->
+    <select id="getTpShouldPeople" resultType="java.lang.Integer">
+        SELECT -- 应该参加的人数
+        ifnull(COUNT(*), 0)
+        FROM statistics_training_project
+        WHERE training_project_id IN
+        <foreach collection="ids" index="index" item="item" separator="," open="(" close=")">
+            #{item}
+        </foreach>
+    </select>
+
+    <select id="getPageToCalendar" resultMap="BaseResultMap">
+        SELECT
+        c.id AS tb_id,
+        c.logo_img AS tb_logo_img,
+        c.`name` AS tb_name,
+        c.start_time AS tb_start_time,
+        c.end_time AS tb_end_time,
+        c.enable_enroll AS tb_enable_enroll ,
+        tre.pay_type
+        FROM
+        training_project c
+        LEFT JOIN tr_enroll tre on c.id=tre.training_project_id
+        where 1=1
+        <if test="finishTrIds != null and finishTrIds.size> 0">
+            and c.id not in (<foreach collection="finishTrIds" item="id" separator=",">#{id}</foreach>)
+        </if>
+
+        and (c.visible_range = 1
+        <if test="trIds != null and trIds.size > 0">
+            or c.id in (<foreach collection="trIds" item="item" separator=",">#{item}</foreach>)
+        </if>
+        )
+        and c.status = 1
+        and c.enable_task = 1
+        AND c.`site_id` = #{siteId}
+        AND (c.start_time IS NULL OR DATE_FORMAT(c.start_time, '%Y-%m-%d') &lt;= DATE_FORMAT(#{currentDate},
+        '%Y-%m-%d'))
+        AND (c.end_time IS NULL OR DATE_FORMAT(c.end_time, '%Y-%m-%d') &gt;= DATE_FORMAT(#{currentDate}, '%Y-%m-%d'))
+        order by c.start_time desc,c.end_time desc
+    </select>
+
+    <select id="getPageToCalendarNum" resultType="java.lang.Integer">
+        select count(1)
+        from training_project c
+        where 1=1
+        <if test="finishTrIds != null and finishTrIds.size> 0">
+            and c.id not in (<foreach collection="finishTrIds" item="id" separator=",">#{id}</foreach>)
+        </if>
+
+        and (c.visible_range = 1
+        <if test="trIds != null and trIds.size > 0">
+            or c.id in (<foreach collection="trIds" item="item" separator=",">#{item}</foreach>)
+        </if>
+        )
+        and c.status = 1
+        and c.enable_task = 1
+        AND c.`site_id` = #{siteId}
+        AND (c.start_time IS NULL OR DATE_FORMAT(c.start_time, '%Y-%m-%d') &lt;= DATE_FORMAT(#{currentDate},
+        '%Y-%m-%d'))
+        AND (c.end_time IS NULL OR DATE_FORMAT(c.end_time, '%Y-%m-%d') &gt;= DATE_FORMAT(#{currentDate}, '%Y-%m-%d'))
+    </select>
+
+    <select id="getIdsByDate" resultType="Long">
+        select id
+        from training_project c
+        where 1 = 1
+          and c.status = 1
+          and c.enable_task = 1
+          AND c.`site_id` = #{siteId}
+          AND (c.start_time IS NULL OR
+               DATE_FORMAT(c.start_time, '%Y-%m-%d') &lt;= DATE_FORMAT(#{currentDate}, '%Y-%m-%d'))
+          AND (c.end_time IS NULL OR DATE_FORMAT(c.end_time, '%Y-%m-%d') &gt;= DATE_FORMAT(#{currentDate}, '%Y-%m-%d'))
+    </select>
+
+    <!-- 精品内容展示付费资源 -->
+    <select id="apiPaidPageList" resultType="com.yizhi.training.application.vo.api.PaidTrainingProjectVO">
+        select tb.id, tb.name, tb.logo_img as logoImg, tb.release_time as releaseTime,tb.start_time as
+        startTime,tb.end_time as endTime, te.actual_price as
+        actualPrice,
+        te.original_price as originalPrice, count(ter.account_id) as exchangeCount, te.pay_type as meansOfPurchase
+        from tr_enroll te
+        left join training_project tb on tb.id = te.training_project_id and te.enable_pay = 1 <!-- 报名付费-->
+        and (<![CDATA[ DATE_FORMAT(te.end_time, '%Y-%m-%d') >= DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>) and (
+        <![CDATA[ DATE_FORMAT(te.start_time, '%Y-%m-%d') <= DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>)
+--         and te.pay_type != 2 <!-- 筛选付费方式 去除 纯兑换码方式  会员重构放开限制-->
+        left join tr_enroll_record ter on tb.id = ter.training_project_id and audit_status = 0 <!-- 0: 无需审核-->
+        where
+        -- 首先用站点 id 和上架状态缩小范围
+        (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and
+        (<![CDATA[ DATE_FORMAT(tb.end_time, '%Y-%m-%d') >= DATE_FORMAT(#{now}, '%Y-%m-%d') ]]> or tb.end_time is null)
+
+        )
+        and
+        (
+        -- 平台可见
+        tb.visible_range = 1
+        -- 指定范围
+        <if test="visiableTpIds != null and visiableTpIds.size > 0">
+            or (tb.id in
+            <foreach collection="visiableTpIds" open="(" close=")" separator="," item="item">#{item}</foreach>)
+        </if>
+        )
+        <if test="keyword != null and keyword != ''">
+            and (tb.key_words like concat('%', #{keyword}, '%')
+            or
+            tb.name like concat('%', #{keyword}, '%'))
+        </if>
+        group by tb.id order by
+        <choose>
+            <when test="orderField == 'exchangeCount'">
+                exchangeCount
+            </when>
+            <when test="orderField == 'actualPrice'">
+                actualPrice
+            </when>
+            <otherwise>
+                releaseTime
+            </otherwise>
+        </choose>
+        <choose>
+            <when test="order == 'asc'">
+                asc
+            </when>
+            <otherwise>
+                desc
+            </otherwise>
+        </choose>
+        ,id desc
+    </select>
+    <select id="getProjectDesc" resultType="com.yizhi.training.application.vo.domain.TrainingProjectVo">
+        select tp.*, en.actual_price, en.original_price, en.enable_pay
+        from training_project tp
+                 left join tr_enroll en on tp.id = en.training_project_id
+        where tp.id = #{projectId}
+          and tp.deleted = 0
+    </select>
+    <!--赚取积分项目列表 -->
+    <select id="pageGainPointList" resultType="com.yizhi.training.application.vo.api.GainPointProjectVo">
+        SELECT tp.id,tp.`name`,tp.logo_img as image ,tp.point as totalPoints ,tp.start_time as startTime ,tp.end_time as
+        endTime
+        from training_project tp
+        WHERE tp.company_id = #{companyId} and tp.site_id = #{siteId} and tp.`status` = 1 and tp.deleted = 0
+        and tp.point &gt; 0 and NOW() &gt;= tp.start_time and NOW() &lt;= tp.end_time
+        and (
+        tp.visible_range = 1
+        <if test="null != relationIds">
+            or
+            (tp.visible_range = 0 and tp.id in
+            (SELECT tpar.biz_id from tp_authorization_range tpar WHERE tpar.deleted = 0 and tpar.relation_id in
+            <foreach collection="relationIds" item="rId" index="index" open="(" close=")" separator=",">
+                #{rId}
+            </foreach>
+            )
+            )
+        </if>
+        )
+        and tp.id not in
+        (SELECT vr.training_project_id from tp_student_project_record vr where vr.account_id = #{accountId} and
+        vr.site_id = #{siteId} and vr.finished = true)
+        <if test="title != null and title != ''">
+            and tp.`name` LIKE concat('%',#{title},'%')
+        </if>
+        ORDER BY tp.release_time DESC
+    </select>
+    <select id="selectPageList"
+            resultType="com.yizhi.training.application.vo.dashboard.TrainDashboardResourceVO">
+        SELECT p.*
+        from training_project p
+        where p.company_id = #{companyId}
+          and p.site_id = #{siteId}
+          and p.deleted = 0
+        ORDER BY p.update_time desc, p.id
+
+    </select>
+    <select id="selectJoinCount"
+            resultType="com.yizhi.training.application.vo.dashboard.TrainDashboardResourceVO">
+
+        SELECT r.training_project_id as id
+        ,COUNT(DISTINCT r.account_id) as joinCount
+        ,COUNT(r.id) as joinPersonTime
+        from tp_view_record r
+        where r.company_id = #{companyId}
+        and r.site_id = #{siteId}
+        and r.training_project_id in
+        <foreach collection="ids" item="pId" close=")" open="(" separator=",">
+            #{pId}
+        </foreach>
+        GROUP BY r.training_project_id
+    </select>
+
+
+</mapper>

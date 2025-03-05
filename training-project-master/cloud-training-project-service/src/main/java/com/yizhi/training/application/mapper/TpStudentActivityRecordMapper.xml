@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.TpStudentActivityRecordMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yizhi.training.application.domain.TpStudentActivityRecord">
+        <id column="tb_id" property="id"/>
+        <result column="tb_type" property="type"/>
+        <result column="tb_account_id" property="accountId"/>
+        <result column="tb_relation_id" property="relationId"/>
+        <result column="tb_score" property="score"/>
+        <result column="tb_seconds" property="seconds"/>
+        <result column="tb_finished" property="finished"/>
+        <result column="tb_finish_date" property="finishDate"/>
+        <result column="tb_site_id" property="siteId"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        tb
+        .
+        id
+        AS tb_id,
+      tb.type AS tb_type,
+      tb.account_id AS tb_account_id,
+      tb.relation_id AS tb_relation_id,
+      tb.score AS tb_score,
+      tb.seconds AS tb_seconds,
+      tb.finished AS tb_finished,
+      tb.finish_date AS tb_finish_date,
+      tb.site_id AS tb_site_id
+    </sql>
+
+    <select id="selectFinished" resultType="java.lang.Long">
+        select distinct tb.relation_id
+        from tp_student_activity_record tb
+        where
+         tb.company_id = #{companyId}
+        and tb.site_id = #{siteId}
+        and tb.relation_id in
+        <foreach collection="relationIds" separator="," open="(" close=")" item="item">
+            #{item}
+        </foreach>
+        and tb.finished = #{finished}
+        and tb.account_id = #{accountId}
+    </select>
+
+    <select id="getAccountIdByRelationIds" resultType="java.lang.Long">
+        select distinct account_id
+        from tp_student_activity_record
+        where
+        finished = 1
+        and relation_id in
+        (<foreach collection="relationIds" item="item" separator=",">#{item}</foreach>)
+    </select>
+
+    <select id="getFinishedCountByRelationIds" resultType="java.lang.Integer">
+        select count(distinct relation_id)
+        from tp_student_activity_record
+        where
+        relation_id in
+        (<foreach collection="relationIds" item="item" separator=",">#{item}</foreach>)
+        and finished = 1
+        and account_id = #{accountId}
+        and site_id = #{siteId}
+    </select>
+
+
+    <select id="selectCountFactJoinNumTrainingProjectOrgGroup" resultType="java.lang.Integer">
+        SELECT count(distinct(tsar.account_id)) FROM tp_student_activity_record tsar
+        LEFT JOIN tp_plan_activity tpa
+        ON tsar.relation_id=tpa.relation_id
+        LEFT JOIN training_project tp
+        ON tpa.training_project_id=tp.id
+        where tp.status=1 AND tp.deleted=0
+        and tar.account_id in
+        <foreach collection="accountIdList" item="accountId" index="index" open="(" close=")" separator=",">
+            #{accountId}
+        </foreach>
+        and <![CDATA[ tp.start_time <= #{startDate} ]]>
+        and <![CDATA[ tp.end_time >= #{endDate} ]]>
+    </select>
+
+
+    <select id="getRecordeAllWorkId" resultType="java.lang.Long">
+        SELECT DISTINCT(relation_id)
+        FROM `tp_plan_activity`
+    </select>
+
+
+    <select id="getAllRecordeByTimeLimit" resultType="com.yizhi.training.application.domain.TpStudentActivityRecord">
+
+        select id,type,account_id as accountId,relation_id as relationId,score,seconds,finished,finish_date as
+        finishDate,site_id as siteId from tp_student_activity_record
+        where relation_id=#{relationId}
+        and company_id = #{companyId}
+        and site_id = #{siteId}
+        <if test="startDate!=null and startDate!='' and endDate!=null and endDate!=''">
+            AND (<![CDATA[ DATE_FORMAT(finish_date,'%Y-%m-%d')<=DATE_FORMAT(#{endDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            AND <![CDATA[ DATE_FORMAT(finish_date,'%Y-%m-%d')>=DATE_FORMAT(#{startDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            )
+        </if>
+
+    </select>
+    <select id="selectPageListByRelationIds"
+            resultType="com.yizhi.training.application.domain.TpStudentActivityRecord">
+        SELECT r.account_id,r.relation_id,MAX(r.finished) as finished , MAX(r.finish_date) as finish_date
+        from tp_student_activity_record r
+        where
+        r.site_id = #{siteId}
+        <if test="relationIds != null and relationIds.size > 0">
+            and r.relation_id in
+            <foreach collection="relationIds" item="rId" close=")" open="(" separator=",">
+                #{rId}
+            </foreach>
+        </if>
+        <if test="null != startTime and null != endTime">
+            and r.finish_date &gt;= #{startTime} and r.finish_date &lt;= #{endTime}
+        </if>
+        <if test="null != accountIds  and accountIds.size > 0">
+            and r.account_id in
+            <foreach collection="accountIds" item="aId" close=")" open="(" separator=",">
+                #{aId}
+            </foreach>
+        </if>
+        and r.type = #{type}
+        and r.finished = 1
+        GROUP BY r.account_id,r.relation_id
+        ORDER BY r.finish_date ASC,r.id
+    </select>
+    <select id="getAllRecordeBySiteIdsTimeLimit"
+            resultType="com.yizhi.training.application.vo.domain.TpStudentActivityRecordVo">
+        select
+        id,
+        type,
+        account_id as accountId,
+        relation_id as relationId,
+        score,
+        seconds,
+        finished,
+        finish_date as finishDate,
+        site_id as siteId
+        from tp_student_activity_record
+        where site_id in
+        <foreach collection="siteIds" separator="," item="siteId" close=")" open="(">
+            #{siteId}
+        </foreach>
+        <if test="startDate!=null and startDate!='' and endDate!=null and endDate!=''">
+            AND (<![CDATA[ DATE_FORMAT(finish_date,'%Y-%m-%d')<=DATE_FORMAT(#{endDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            AND <![CDATA[ DATE_FORMAT(finish_date,'%Y-%m-%d')>=DATE_FORMAT(#{startDate,jdbcType=VARCHAR},'%Y-%m-%d') ]]>
+            )
+        </if>
+
+    </select>
+    <select id="getActivityFinishedDate"
+            resultType="com.yizhi.training.application.domain.TpStudentActivityRecord">
+        SELECT relation_id AS relationId,MAX(finished) finished
+        FROM tp_student_activity_record
+        WHERE account_id=#{accountId} and company_id = #{companyId} and site_id = #{siteId} AND relation_id IN
+        <foreach collection='relationIds' item='id' open='(' close=')' separator=','>
+            #{id}
+        </foreach>
+        <if test="limitEndTime != null">
+            and finish_date &lt;= #{limitEndTime}
+        </if>
+        GROUP BY account_id, relation_id ORDER BY account_id, relation_id
+    </select>
+    <select id="selectStuActivityFinishedList"
+            resultType="com.yizhi.core.application.vo.BaseViewRecordVO">
+
+        SELECT r.account_id
+             , MIN(r.finish_date) as finishedTime
+
+        from tp_student_activity_record r
+        where r.company_id = #{companyId}
+          and r.site_id = #{siteId}
+          and r.finished = 1
+          and r.relation_id = #{relationId}
+          and r.type = #{relationType}
+
+        GROUP BY r.account_id
+
+    </select>
+</mapper>

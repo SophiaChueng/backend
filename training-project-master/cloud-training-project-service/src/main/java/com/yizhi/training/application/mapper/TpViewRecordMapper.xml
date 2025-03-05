@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yizhi.training.application.mapper.TpViewRecordMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.yizhi.training.application.domain.TpViewRecord">
+        <id column="id" property="id"/>
+        <result column="account_id" property="accountId"/>
+        <result column="site_id" property="siteId"/>
+        <result column="company_id" property="companyId"/>
+        <result column="org_id" property="orgId"/>
+        <result column="time" property="time"/>
+        <result column="training_project_id" property="trainingProjectId"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id
+        , account_id, site_id, company_id, org_id, time, training_project_id
+    </sql>
+    <select id="getTpProMaxViewTime" resultType="com.yizhi.training.application.v2.MyTpUnFinishedVO">
+        select
+        max(tr.time) as studyAndEnorll,
+        tpm.tp_pro_id as tpId,
+        "1" as startType
+        from tp_view_record tr
+        left join training_project tp
+        on tp.id = tr.training_project_id
+        LEFT JOIN tp_authorization_range tb
+        on tb.biz_id = tp.id and tb.deleted = 0 and tb.site_id = #{siteId}
+        left join tp_pro_mapping tpm on tpm.training_project_id = tp.id
+        WHERE
+        tr.account_id = #{accountId}
+        and tr.site_id = #{siteId}
+        and tp.site_id = #{siteId}
+        and tpm.site_id = #{siteId}
+        and tp.deleted = 0
+        and tp.status = 1
+        and tpm.deleted = 0
+        and tpm.tp_pro_id in
+        <foreach collection="tpProIdList" open="(" close=")" item="proId" separator=",">
+            #{proId}
+        </foreach>
+        and (tp.visible_range = 1 or
+        (tb.relation_id in
+        <foreach collection="relationIds" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+        )
+        )
+        group by tpm.tp_pro_id
+    </select>
+    <select id="getTpProMaxEnrollTime" resultType="com.yizhi.training.application.v2.MyTpUnFinishedVO">
+        select
+        max(tr.apply_time) studyAndEnorll,
+        tpm.tp_pro_id as tpId,
+        "0" as startType
+        from tr_enroll_record tr
+        left join training_project tp on tp.id = tr.training_project_id
+        LEFT JOIN tp_authorization_range tb on tb.biz_id = tp.id and tb.deleted = 0 and tb.site_id = #{siteId}
+        left join tp_pro_mapping tpm on tpm.training_project_id = tp.id
+        WHERE
+        tp.site_id = #{siteId}
+        and tr.account_id = #{accountId}
+        and tpm.site_id = #{siteId}
+        and tp.deleted = 0
+        and tp.status = 1
+        and tpm.deleted = 0
+        and tpm.tp_pro_id in
+        <foreach collection="tpProIdList" open="(" close=")" item="proId" separator=",">
+            #{proId}
+        </foreach>
+        and (tp.visible_range = 1 or
+        (tb.relation_id in
+        <foreach collection="relationIds" open="(" close=")" item="item" separator=",">
+            #{item}
+        </foreach>
+        )
+        )
+        group by tpm.tp_pro_id
+    </select>
+    <select id="getLearningCount" resultType="java.lang.Integer">
+        select count(distinct t.account_id)
+        from tp_view_record t
+                 left join tp_student_project_record r
+                           on r.`training_project_id` = t.`training_project_id`
+                               and r.site_id = t.site_id
+                               and r.company_id = t.company_id
+                               and r.finished = 1
+        where t.company_id = #{companyId}
+          and t.site_id = #{siteId}
+          and t.training_project_id = #{tpId}
+          and r.id is null
+    </select>
+
+</mapper>
