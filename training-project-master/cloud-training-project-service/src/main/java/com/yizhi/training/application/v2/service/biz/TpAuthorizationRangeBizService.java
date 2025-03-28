@@ -1,5 +1,8 @@
 package com.yizhi.training.application.v2.service.biz;
 
+import com.yizhi.core.application.enums.CommonVisibleRangeBizTypeEnum;
+import com.yizhi.core.application.visibleRange.VisibleRangeComponent;
+import com.yizhi.system.application.feign.CommonVisibleRangeClient;
 import com.yizhi.system.application.system.remote.AccountClient;
 import com.yizhi.system.application.vo.AccountRangeVo;
 import com.yizhi.system.application.vo.AccountVO;
@@ -52,6 +55,12 @@ public class TpAuthorizationRangeBizService {
 
     @Autowired
     private CacheUtil cacheUtil;
+
+
+    @Autowired
+    private com.yizhi.core.application.visibleRange.VisibleRangeComponent VisibleRangeComponent;
+    @Autowired
+    private CommonVisibleRangeClient commonVisibleRangeClient;
 
     /**
      * 查询可见范围列表
@@ -156,20 +165,9 @@ public class TpAuthorizationRangeBizService {
             List<AccountVO> accountVOS = accountClient.findBySiteId(tp.getSiteId());
             return accountVOS.stream().map(AccountVO::getId).collect(Collectors.toList());
         } else if (TpVisibleRangeEnum.SPECIFIC_USER.getCode().equals(tp.getVisibleRange())) {
-            //1：部门、2：用户
-            List<TpAuthorizationRange> ranges = tpAuthorizationRangeService.getAuthorizationRanges(trainingProjectId);
-            List<Long> visibleAccountIds =
-                ranges.stream().filter(range -> TpAuthorizationTypeEnum.USER.getCode().equals(range.getType()))
-                    .map(TpAuthorizationRange::getRelationId).collect(Collectors.toList());
-            List<Long> visibleOrgIds =
-                ranges.stream().filter(range -> TpAuthorizationTypeEnum.ORGANIZATION.getCode().equals(range.getType()))
-                    .map(TpAuthorizationRange::getRelationId).collect(Collectors.toList());
-            AccountRangeVo rangeVo = new AccountRangeVo();
-            rangeVo.setCompanyId(tp.getCompanyId());
-            rangeVo.setAccountIds(visibleAccountIds);
-            rangeVo.setOrgIds(visibleOrgIds);
-            List<AccountVO> rangeAccountList = accountClient.getRangeAccountList(rangeVo);
-            return rangeAccountList.stream().map(AccountVO::getId).collect(Collectors.toList());
+            //   查询资源的用户 可见范围
+            return commonVisibleRangeClient.getBizUserIds(trainingProjectId, CommonVisibleRangeBizTypeEnum.TRAINING.getBizType());
+
         }
         return Collections.emptyList();
     }
@@ -181,53 +179,7 @@ public class TpAuthorizationRangeBizService {
      * @return
      */
     public boolean checkAccountIdVisible(Long trainingProjectId, Long accountId) {
-        VisibleRangeModel authorizationAccountIdList = cacheUtil.getAuthorizationAccountIdList(trainingProjectId);
-        if (Objects.nonNull(authorizationAccountIdList)) {
-            //缓存中存在
-            if (TpVisibleRangeEnum.PLATFORM_USER.getCode().equals(authorizationAccountIdList.getType())) {
-                // 平台用户可见，查询站点下用户
-                return Boolean.TRUE;
-            }
-            Set<Long> accountSet = authorizationAccountIdList.getAccountSet();
-            if (CollectionUtils.isNotEmpty(accountSet) && accountSet.contains(accountId)) {
-                return Boolean.TRUE;
-            }
-            return Boolean.FALSE;
-        }
-        TrainingProject byId = trainingProjectService.getById(trainingProjectId);
-        if (Objects.isNull(byId)) {
-            return Boolean.FALSE;
-        }
-        if (TpVisibleRangeEnum.PLATFORM_USER.getCode().equals(byId.getVisibleRange())) {
-            cacheUtil.addAuthorizationAccountIdList(new HashSet<>(), trainingProjectId,
-                TpVisibleRangeEnum.PLATFORM_USER.getCode());
-            return Boolean.TRUE;
-        }
-        //用户
-        List<TpAuthorizationRange> ranges = tpAuthorizationRangeService.getAuthorizationRanges(trainingProjectId);
-        if (CollectionUtils.isEmpty(ranges)) {
-            return Boolean.FALSE;
-        }
-        Set<Long> accountIdSet = new HashSet<>();
-        List<Long> visibleAccountIds =
-            ranges.stream().filter(range -> TpAuthorizationTypeEnum.USER.getCode().equals(range.getType()))
-                .map(TpAuthorizationRange::getRelationId).collect(Collectors.toList());
-        if (CollectionUtils.isNotEmpty(visibleAccountIds)) {
-            accountIdSet.addAll(visibleAccountIds);
-        }
-        //部门
-        List<Long> visibleOrgIds =
-            ranges.stream().filter(range -> TpAuthorizationTypeEnum.ORGANIZATION.getCode().equals(range.getType()))
-                .map(TpAuthorizationRange::getRelationId).collect(Collectors.toList());
-        AccountRangeVo rangeVo = new AccountRangeVo();
-        rangeVo.setCompanyId(byId.getCompanyId());
-        rangeVo.setOrgIds(visibleOrgIds);
-        Set<Long> rangeAccountIdList = accountClient.getRangeAccountIdList(rangeVo);
-        if (CollectionUtils.isNotEmpty(rangeAccountIdList)) {
-            accountIdSet.addAll(rangeAccountIdList);
-        }
-        cacheUtil.addAuthorizationAccountIdList(accountIdSet, trainingProjectId,
-            TpVisibleRangeEnum.SPECIFIC_USER.getCode());
-        return accountIdSet.contains(accountId);
+        return VisibleRangeComponent.visible(trainingProjectId, accountId);
+
     }
 }

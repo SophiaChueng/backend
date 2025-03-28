@@ -37,6 +37,9 @@ public class TpDetailInfoVO implements Serializable {
     @ApiModelProperty("是否开启消息提醒")
     private Integer enableMsgRemind;
 
+    @ApiModelProperty(value = "项目是否0：指定学员可见，1平台用户可见（创建人管理权限范围）")
+    private Integer visibleRange;
+
     @ApiModelProperty("可见范围（为null或列表为空视为 平台可见）")
     private List<TpVisibleRangeVO> visibleRanges;
 

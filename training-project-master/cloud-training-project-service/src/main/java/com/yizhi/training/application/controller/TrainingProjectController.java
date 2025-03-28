@@ -1096,5 +1096,16 @@ public class TrainingProjectController {
         @RequestParam("planId") Long planId) {
         return trainingProjectService.getPlanFinishRecords(accountId, planId);
     }
+
+
+
+    @GetMapping("/get/plan/finish/records2")
+    BizResponse<String> getPlanFinishRecords2(@RequestParam("accountId") Long accountId,
+                                              @RequestParam("planId") Long planId) {
+
+
+        trainingProjectService.maopaoList(accountId,planId);
+        return BizResponse.ok();
+    }
 }
 

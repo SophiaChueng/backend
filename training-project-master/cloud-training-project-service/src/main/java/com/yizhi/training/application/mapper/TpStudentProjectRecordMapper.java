@@ -59,7 +59,7 @@ public interface TpStudentProjectRecordMapper extends BaseMapper<TpStudentProjec
      * @return
      */
     Integer getTrainingProjectNumTrainingProjectOrgGroup(@Param("startDate") Date startDate,
-        @Param("endDate") Date endDate, @Param("accountIdList") List<Long> accountIdList);
+                                                         @Param("endDate") Date endDate, @Param("accountIdList") List<Long> accountIdList);
 
     /**
      * 判断项目是否完成了
@@ -70,16 +70,16 @@ public interface TpStudentProjectRecordMapper extends BaseMapper<TpStudentProjec
      * @return
      */
     Integer projectIsFinish(@Param("accountId") Long accountId, @Param("projectId") Long projectId,
-        @Param("siteId") Long siteId);
+                            @Param("siteId") Long siteId);
 
     /*
      * 根据id时间段查看项目完成记录
      */
     List<TpStudentProjectRecord> getTpStudentProjectRecordByTpIdAndTime(@Param("tpId") Long tpId,
-        @Param("startTime") String startTime, @Param("endTime") String endTime);
+                                                                        @Param("startTime") String startTime, @Param("endTime") String endTime);
 
     Integer getFinisheNum(@Param("ids") Set<Long> ids, @Param("startDate") Date startDate,
-        @Param("endDate") Date endDate);
+                          @Param("endDate") Date endDate);
 
     /**
      * 复旦mini mba项目获取项目完成情况
@@ -89,7 +89,7 @@ public interface TpStudentProjectRecordMapper extends BaseMapper<TpStudentProjec
      * @return
      */
     List<TpStudentProjectRecordVoVO> getProjectsStatus(@Param("accountId") Long accountId,
-        @Param("projectIds") List<Long> projectIds);
+                                                       @Param("projectIds") List<Long> projectIds);
 
     /**
      * 复旦mini mba项目获取正在学习人数
@@ -100,7 +100,7 @@ public interface TpStudentProjectRecordMapper extends BaseMapper<TpStudentProjec
      * @return
      */
     Integer getProjectsStudyingNum(@Param("projectIds") List<Long> projectIds, @Param("companyId") Long companyId,
-        @Param("siteId") Long siteId);
+                                   @Param("siteId") Long siteId);
 
     /**
      * 复旦mini mba项目获取学习记录
@@ -110,14 +110,14 @@ public interface TpStudentProjectRecordMapper extends BaseMapper<TpStudentProjec
      * @return
      */
     List<TpStudentProjectRecordVoVO> getProjectsStudyingRecords(@Param("projectIds") List<Long> projectIds,
-        @Param("accountId") Long accountId);
+                                                                @Param("accountId") Long accountId);
 
     List<Long> getFinshIdsByIds(@Param("ids") List<Long> ids, @Param("accountId") Long accountId,
-        @Param("siteId") Long siteId);
+                                @Param("siteId") Long siteId);
 
     //根据时间 站点获取完成记录
     List<TpStudentProjectRecord> getFinishRecords(@Param("siteId") Long siteId, @Param("startDate") Date startDate,
-        @Param("endDate") Date endDate);
+                                                  @Param("endDate") Date endDate);
 
     /**
      * 查询培训项目通过的记录
@@ -129,32 +129,32 @@ public interface TpStudentProjectRecordMapper extends BaseMapper<TpStudentProjec
      * @return 通过记录
      */
     List<TpStudentProjectRecord> getPageList(@Param("projectIds") List<Long> projectIds,
-        @Param("accountIds") List<Long> accountIds, @Param("passedStartTime") Date passedStartTime,
-        @Param("passedEndTime") Date passedEndTime, @Param("siteId") Long siteId, Page<TpStudentProjectRecord> page);
+                                             @Param("accountIds") List<Long> accountIds, @Param("passedStartTime") Date passedStartTime,
+                                             @Param("passedEndTime") Date passedEndTime, @Param("siteId") Long siteId, Page<TpStudentProjectRecord> page);
 
     List<TpStudentProjectRecordVo> getTpStudentProjectRecordBySiteIdsAndTime(@Param("siteIds") List<Long> siteIds,
-        @Param("startDate") String startDate, @Param("endDate") String endDate);
+                                                                             @Param("startDate") String startDate, @Param("endDate") String endDate);
 
     List<MyTpFinishedVO> getFinishedTpV2(@Param("accountId") Long accountId, @Param("siteId") Long siteId,
-        @Param("relationIds") List<Long> relationIds, @Param("page") Page<MyTpFinishedVO> page);
+                                         @Param("accountRelBizIds") List<Long> accountRelBizIds, @Param("page") Page<MyTpFinishedVO> page);
 
     List<Long> selectFinishedTpAndProId(@Param("accountId") Long accountId, @Param("siteId") Long siteId);
 
     List<MyTpUnFinishedVO> getStartViewAnUnFinished(@Param("accountId") Long accountId, @Param("siteId") Long siteId,
-        @Param("relationIds") List<Long> relationIds);
+                                                    @Param("accountRelBizIds") List<Long> accountRelBizIds);
 
     List<MyTpUnFinishedVO> getEnrollAnUnFinished(@Param("accountId") Long accountId, @Param("siteId") Long siteId,
-        @Param("relationIds") List<Long> relationIds);
+                                                 @Param("accountRelBizIds") List<Long> accountRelBizIds);
 
     List<MyTpUnFinishedVO> getProAnUnFinished(@Param("accountId") Long accountId, @Param("siteId") Long siteId,
-        @Param("relationIds") List<Long> relationIds);
+                                              @Param("accountRelBizIds") List<Long> accountRelBizIds);
 
     List<Long> getFinishedAccountIds(@Param("tpId") Long tpId, @Param("companyId") Long companyId,
-        @Param("siteId") Long siteId);
+                                     @Param("siteId") Long siteId);
 
     Integer getFinishedAccountCount(@Param("tpId") Long tpId, @Param("companyId") Long companyId,
-        @Param("siteId") Long siteId);
+                                    @Param("siteId") Long siteId);
 
     List<BaseViewRecordVO> getFinishedRecordsListGroupByAccountId(@Param("trainProjectId") Long trainProjectId,
-        @Param("companyId") Long companyId, @Param("siteId") Long siteId);
+                                                                  @Param("companyId") Long companyId, @Param("siteId") Long siteId);
 }

@@ -1377,6 +1377,60 @@ public class TrainingProjectServiceImpl extends ServiceImpl<TrainingProjectMappe
         return trainDashboardResourceVOS;
     }
 
+
+    @Override
+    public void maopaoList(Long accountId, Long planId) {
+        if (null == accountId || null == planId){
+            return;
+        }
+        int[] array = {64, 34, 25, 12, 22, 11, 90};
+
+
+        printArray(array);
+
+        bubbleSort(array);
+
+
+    }
+    private  void printArray(int[] arr) {
+        for (int value : arr) {
+            System.out.print(value + " ");
+        }
+    }
+    /**
+     * 冒泡排序算法实现
+     * @param arr 待排序的数组
+     */
+    public void bubbleSort(int[] arr) {
+        if (arr == null || arr.length < 2) {
+            return; // 如果数组为空或长度小于2，无需排序
+        }
+
+        int n = arr.length;
+        // 外层循环控制排序轮数
+        for (int i = 0; i < n - 1; i++) {
+            // 内层循环控制每轮比较次数
+            for (int j = 0; j < n - i - 1; j++) {
+                // 如果前一个元素大于后一个元素，则交换它们
+                if (arr[j] > arr[j + 1]) {
+                    swap(arr, j, j + 1);
+                }
+            }
+        }
+    }
+
+    /**
+     * 交换数组中两个元素的位置
+     * @param arr 数组
+     * @param i 第一个元素的索引
+     * @param j 第二个元素的索引
+     */
+    private void swap(int[] arr, int i, int j) {
+        int temp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = temp;
+    }
+
     private Integer getPayType(Long tpId) {
         TpEnroll one = tpEnrollService.selectByTpId(tpId);
         if (Objects.isNull(one)) {

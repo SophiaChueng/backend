@@ -12,12 +12,14 @@ import com.yizhi.core.application.context.ContextHolder;
 import com.yizhi.core.application.context.RequestContext;
 import com.yizhi.core.application.enums.LearnPayTypeEnum;
 import com.yizhi.core.application.exception.BizException;
+import com.yizhi.core.application.visibleRange.VisibleRangeComponent;
 import com.yizhi.documents.application.feign.DocumentRelationClient;
 import com.yizhi.forum.application.feign.PostsRelationClient;
 import com.yizhi.lecturer.application.enums.LecturerRelationTypeEnum;
 import com.yizhi.lecturer.application.feign.LecturerClient;
 import com.yizhi.lecturer.application.vo.LecturerListVO;
 import com.yizhi.system.application.enums.MemberResourceEnum;
+import com.yizhi.system.application.feign.CommonVisibleRangeClient;
 import com.yizhi.system.application.request.member.SaveMemberResourceRequest;
 import com.yizhi.system.application.system.remote.AccountClient;
 import com.yizhi.system.application.system.remote.MemberClient;
@@ -126,6 +128,10 @@ public class TrainingProjectBizService {
 
     @Autowired
     private MemberClient memberClient;
+    @Autowired
+    private CommonVisibleRangeClient commonVisibleRangeClient;
+    @Autowired
+    private com.yizhi.core.application.visibleRange.VisibleRangeComponent VisibleRangeComponent;
 
     /**
      * 查询项目列表（筛选）
@@ -536,38 +542,38 @@ public class TrainingProjectBizService {
         BeanUtils.copyProperties(project, detailInfoVO);
         detailInfoVO.setTrainingProjectId(project.getId());
         // 可见范围
-        if (TpVisibleRangeEnum.SPECIFIC_USER.getCode().equals(project.getVisibleRange())) {
-            List<TpAuthorizationRange> ranges = tpAuthorizationRangeService.getAuthorizationRanges(trainingProjectId);
-            if (CollectionUtils.isNotEmpty(ranges)) {
-                List<TpVisibleRangeVO> userList = new ArrayList<>();
-                List<TpVisibleRangeVO> visibleRanges =
-                    BeanCopyListUtil.copyListProperties(ranges, TpVisibleRangeVO::new, (s, t) -> {
-                        if (TpAuthorizationTypeEnum.USER.getCode().equals(t.getType())) {
-                            userList.add(t);
-                        }
-                    });
-
-                if (CollectionUtils.isNotEmpty(userList)) {
-                    List<Long> accountIds =
-                        userList.stream().map(TpVisibleRangeVO::getRelationId).collect(Collectors.toList());
-                    List<AccountVO> accountVOS = accountClient.findByIds(accountIds);
-                    if (CollectionUtils.isNotEmpty(accountVOS)) {
-                        Map<Long, AccountVO> accountVOMap =
-                            accountVOS.stream().collect(Collectors.toMap(AccountVO::getId, o -> o));
-                        userList.forEach(o -> {
-                            AccountVO accountVO = accountVOMap.get(o.getRelationId());
-                            if (accountVO != null) {
-                                o.setFullName(accountVO.getFullName());
-                                o.setWorkNum(accountVO.getWorkNum());
-                            }
-                        });
-                    }
-                }
-
-                detailInfoVO.setVisibleRanges(visibleRanges);
-            }
-
-        }
+//        if (TpVisibleRangeEnum.SPECIFIC_USER.getCode().equals(project.getVisibleRange())) {
+//            List<TpAuthorizationRange> ranges = tpAuthorizationRangeService.getAuthorizationRanges(trainingProjectId);
+//            if (CollectionUtils.isNotEmpty(ranges)) {
+//                List<TpVisibleRangeVO> userList = new ArrayList<>();
+//                List<TpVisibleRangeVO> visibleRanges =
+//                    BeanCopyListUtil.copyListProperties(ranges, TpVisibleRangeVO::new, (s, t) -> {
+//                        if (TpAuthorizationTypeEnum.USER.getCode().equals(t.getType())) {
+//                            userList.add(t);
+//                        }
+//                    });
+//
+//                if (CollectionUtils.isNotEmpty(userList)) {
+//                    List<Long> accountIds =
+//                        userList.stream().map(TpVisibleRangeVO::getRelationId).collect(Collectors.toList());
+//                    List<AccountVO> accountVOS = accountClient.findByIds(accountIds);
+//                    if (CollectionUtils.isNotEmpty(accountVOS)) {
+//                        Map<Long, AccountVO> accountVOMap =
+//                            accountVOS.stream().collect(Collectors.toMap(AccountVO::getId, o -> o));
+//                        userList.forEach(o -> {
+//                            AccountVO accountVO = accountVOMap.get(o.getRelationId());
+//                            if (accountVO != null) {
+//                                o.setFullName(accountVO.getFullName());
+//                                o.setWorkNum(accountVO.getWorkNum());
+//                            }
+//                        });
+//                    }
+//                }
+//
+//                detailInfoVO.setVisibleRanges(visibleRanges);
+//            }
+//
+//        }
         // 项目完成条件
         List<TpConditionPost> conditions = tpConditionPostService.getCompleteConditions(trainingProjectId);
         TpCompleteConditionVO conditionVO = new TpCompleteConditionVO();
@@ -590,22 +596,22 @@ public class TrainingProjectBizService {
             boolean numFlag = conditionVO.getCompleteCount() != null && conditionVO.getCompleteCount() > 0;
             boolean specificFlag = CollectionUtils.isNotEmpty(tpPlanIds);
             conditionVO.setConditionPostType(
-                numFlag ? (specificFlag ? TpCompleteConditionTypeEnum.COUNT_AND_SPECIFIC.getCode()
-                    : TpCompleteConditionTypeEnum.SPECIFIC_COUNT.getCode())
-                    : (specificFlag ? TpCompleteConditionTypeEnum.SPECIFIC_PLANS.getCode()
-                        : TpCompleteConditionTypeEnum.ALL_PLAN.getCode()));
+                    numFlag ? (specificFlag ? TpCompleteConditionTypeEnum.COUNT_AND_SPECIFIC.getCode()
+                            : TpCompleteConditionTypeEnum.SPECIFIC_COUNT.getCode())
+                            : (specificFlag ? TpCompleteConditionTypeEnum.SPECIFIC_PLANS.getCode()
+                            : TpCompleteConditionTypeEnum.ALL_PLAN.getCode()));
         }
         detailInfoVO.setCompleteCondition(conditionVO);
 
         // 证书
         TpCertificateStrategyVO strategyVO = null;
         CertificateStrategyVO certificateStrategyVO =
-            certificateClient.getRelationCertificate(trainingProjectId, CertificateEnum.BIZ_TYPE_TRAINING.getCode());
+                certificateClient.getRelationCertificate(trainingProjectId, CertificateEnum.BIZ_TYPE_TRAINING.getCode());
         if (certificateStrategyVO != null && CollectionUtils.isNotEmpty(certificateStrategyVO.getCertificates())) {
             strategyVO = new TpCertificateStrategyVO();
             strategyVO.setIssueStrategy(certificateStrategyVO.getIssueStrategy());
             strategyVO.setCertificates(
-                BeanCopyListUtil.copyListProperties(certificateStrategyVO.getCertificates(), TpCertificateVO::new));
+                    BeanCopyListUtil.copyListProperties(certificateStrategyVO.getCertificates(), TpCertificateVO::new));
         }
         detailInfoVO.setCertificateStrategy(strategyVO);
 
@@ -629,10 +635,10 @@ public class TrainingProjectBizService {
             List<AccountVO> accountVOS = accountClient.findByIds(accIds);
             if (CollectionUtils.isNotEmpty(accountVOS)) {
                 List<TpHeadTeacherVO> headTeacherVOS =
-                    BeanCopyListUtil.copyListProperties(accountVOS, TpHeadTeacherVO::new, (s, t) -> {
-                        t.setAccountId(s.getId());
-                        t.setTrainingProjectId(trainingProjectId);
-                    });
+                        BeanCopyListUtil.copyListProperties(accountVOS, TpHeadTeacherVO::new, (s, t) -> {
+                            t.setAccountId(s.getId());
+                            t.setTrainingProjectId(trainingProjectId);
+                        });
                 detailInfoVO.setHeadTeachers(headTeacherVOS);
             }
         }
@@ -659,17 +665,19 @@ public class TrainingProjectBizService {
         // 2.积分，签到，task，enableQueue,提醒，数据统计，班主任
         BeanUtils.copyProperties(request, updateProject);
         updateProject.setId(request.getTrainingProjectId());
-        updateProject.setVisibleRange(
-            CollectionUtils.isEmpty(request.getVisibleRanges()) ? TpVisibleRangeEnum.PLATFORM_USER.getCode()
-                : TpVisibleRangeEnum.SPECIFIC_USER.getCode());
+//        updateProject.setVisibleRange(
+//            CollectionUtils.isEmpty(request.getVisibleRanges()) ? TpVisibleRangeEnum.PLATFORM_USER.getCode()
+//                : TpVisibleRangeEnum.SPECIFIC_USER.getCode());
         updateProject.setEnableHeadTeacher(CollectionUtils.isEmpty(request.getHeadTeachers()) ? 0 : 1);
         if (!trainingProjectService.updateById(updateProject)) {
             return false;
         }
+
         // 4.可见范围详细设置
-        if (CollectionUtils.isNotEmpty(request.getVisibleRanges())) {
-            tpAuthorizationRangeService.saveVisibleRange(request.getTrainingProjectId(), request.getVisibleRanges());
-        }
+//        if (CollectionUtils.isNotEmpty(request.getVisibleRanges())) {
+//            tpAuthorizationRangeService.saveVisibleRange(request.getTrainingProjectId(), request.getVisibleRanges());
+//        }
+
         // 5.项目完成规则
         tpConditionPostService.updateCompleteCondition(request.getTrainingProjectId(), request.getCompleteCondition());
 
@@ -687,7 +695,7 @@ public class TrainingProjectBizService {
 
             if (CollectionUtils.isNotEmpty(strategyVO.getCertificates())) {
                 List<Long> certificateIds =
-                    strategyVO.getCertificates().stream().map(TpCertificateVO::getId).collect(Collectors.toList());
+                        strategyVO.getCertificates().stream().map(TpCertificateVO::getId).collect(Collectors.toList());
                 paramVO.setCertificateIds(certificateIds);
             }
             certificateClient.saveRelationCertificate(paramVO);
@@ -698,7 +706,7 @@ public class TrainingProjectBizService {
             TpSignVO signVO = request.getSignInfo();
             if (signVO == null || CollectionUtils.isEmpty(signVO.getTpSignTimes())) {
                 throw new BizException(TpExceptionCodeEnum.PARAM_ERROR.getCode(),
-                    TpExceptionCodeEnum.PARAM_ERROR.getDescription());
+                        TpExceptionCodeEnum.PARAM_ERROR.getDescription());
             }
             TpSign oldSign = tpSignService.selectByTpId(request.getTrainingProjectId());
             TpSign sign = new TpSign();
@@ -716,49 +724,27 @@ public class TrainingProjectBizService {
             }
 
             tpSignTimeService.updateSignTime(context.getCompanyId(), context.getSiteId(),
-                request.getTrainingProjectId(), sign, signVO.getTpSignTimes());
+                    request.getTrainingProjectId(), sign, signVO.getTpSignTimes());
         }
 
         // 班主任
         if (CollectionUtils.isNotEmpty(request.getHeadTeachers())) {
             List<Long> accountIds = request.getHeadTeachers().stream().map(TpHeadTeacherVO::getAccountId).distinct()
-                .collect(Collectors.toList());
+                    .collect(Collectors.toList());
             tpHeadTeacherService.saveHeadTeachers(request.getTrainingProjectId(), accountIds);
         }
         //生成可见范围缓存
         generateVisibleAccountIdsCache(request.getTrainingProjectId(), context.getCompanyId(),
-            request.getVisibleRanges());
+                request.getVisibleRanges());
         return true;
     }
 
     public void generateVisibleAccountIdsCache(Long tpId, Long companyId, List<TpVisibleRangeVO> tpVisibleRanges) {
-        Set<Long> accountIdSet = new HashSet<>();
-        if (CollectionUtils.isEmpty(tpVisibleRanges)) {
-            cacheUtil.addAuthorizationAccountIdList(accountIdSet, tpId, TpVisibleRangeEnum.PLATFORM_USER.getCode());
-            return;
-        }
-        //tpVisibleRanges 按照type分组生成map
-        Map<Integer, List<TpVisibleRangeVO>> map =
-            tpVisibleRanges.stream().collect(Collectors.groupingBy(TpVisibleRangeVO::getType));
-        //用户OR部门
-        if (map.containsKey(TpAuthorizationTypeEnum.USER.getCode())) {
-            List<TpVisibleRangeVO> tpVisibleRangeVOS = map.get(TpAuthorizationTypeEnum.USER.getCode());
-            //tpVisibleRangeVOS 提取relationId 的set集合
-            Set<Long> relationIds =
-                tpVisibleRangeVOS.stream().map(TpVisibleRangeVO::getRelationId).collect(Collectors.toSet());
-            accountIdSet.addAll(relationIds);
-        }
-        if (map.containsKey(TpAuthorizationTypeEnum.ORGANIZATION.getCode())) {
-            List<TpVisibleRangeVO> tpVisibleRangeVOS = map.get(TpAuthorizationTypeEnum.ORGANIZATION.getCode());
-            List<Long> orgIds =
-                tpVisibleRangeVOS.stream().map(TpVisibleRangeVO::getRelationId).collect(Collectors.toList());
-            AccountRangeVo rangeVo = new AccountRangeVo();
-            rangeVo.setCompanyId(companyId);
-            rangeVo.setOrgIds(orgIds);
-            Set<Long> rangeAccountIdList = accountClient.getRangeAccountIdList(rangeVo);
-            accountIdSet.addAll(rangeAccountIdList);
-        }
-        cacheUtil.addAuthorizationAccountIdList(accountIdSet, tpId, TpVisibleRangeEnum.SPECIFIC_USER.getCode());
+        //   调用查询可见范围的接口，生成缓存
+        RequestContext context = ContextHolder.get();
+        VisibleRangeComponent.visible(tpId, context.getAccountId());
+
+
     }
 
     /**
