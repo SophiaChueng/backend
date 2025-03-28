@@ -1096,5 +1096,25 @@ public class TrainingProjectController {
         @RequestParam("planId") Long planId) {
         return trainingProjectService.getPlanFinishRecords(accountId, planId);
     }
+
+
+
+
+    @GetMapping("/visibleRange/view2")
+    public List<TpAuthorizationRange> VisibleRange2(@RequestParam("trainingProjectId") Long trainingProjectId) {
+        String item = String.valueOf(trainingProjectId);
+        Object obj = redisCache.hget(VISIBLE_RANGE_KEY, item);
+        if (obj != null) {
+            String s = (String)obj;
+            List<TpAuthorizationRange> list = JSON.parseArray(s, TpAuthorizationRange.class);
+            return list;
+        }
+        TpAuthorizationRange range = new TpAuthorizationRange();
+        range.setBizId(trainingProjectId);
+        List<TpAuthorizationRange> list = tpAuthorizationRangeService.list(new QueryWrapper<>(range));
+        String s = JSON.toJSONString(list);
+        redisCache.hset(VISIBLE_RANGE_KEY, item, s, 600);
+        return list;
+    }
 }
 
