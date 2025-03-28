@@ -1116,5 +1116,15 @@ public class TrainingProjectController {
         redisCache.hset(VISIBLE_RANGE_KEY, item, s, 600);
         return list;
     }
+
+
+    @GetMapping("/get/plan/finish/records2")
+    BizResponse<String> getPlanFinishRecords2(@RequestParam("accountId") Long accountId,
+                                              @RequestParam("planId") Long planId) {
+
+
+        trainingProjectService.maopaoList(accountId,planId);
+        return BizResponse.ok();
+    }
 }
 

@@ -266,4 +266,6 @@ public interface ITrainingProjectService extends IService<TrainingProject> {
     TrainingProject getByIdWithJoinNumber(Long id);
 
     List<TrainDashboardResourceVO> selectJoinCount(Long companyId, Long siteId, List<Long> ids);
+
+    void maopaoList(Long accountId, Long planId);
 }
