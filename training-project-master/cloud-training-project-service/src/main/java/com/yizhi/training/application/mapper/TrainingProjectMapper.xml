@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.yizhi.training.application.mapper.TrainingProjectMapper">
-
+    
     <!-- 通用查询映射结果 -->
     <resultMap id="BaseResultMap" type="com.yizhi.training.application.domain.TrainingProject">
         <id column="tb_id" property="id"/>
@@ -36,7 +36,7 @@
         <result column="tb_weight" property="weight"/>
         <result column="pay_type" property="payType"/>
     </resultMap>
-
+    
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
         DISTINCT
@@ -71,7 +71,7 @@
       tb.remind_content AS tb_remind_content,
       tb.weight as tb_weight
     </sql>
-
+    
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List_simple">
         DISTINCT
@@ -86,7 +86,7 @@
       tb.org_id AS tb_org_id,
       tb.company_id AS tb_company_id
     </sql>
-
+    
     <select id="searchPage" resultMap="BaseResultMap">
         SELECT
         tp.`id` as tb_id,
@@ -119,8 +119,8 @@
         </where>
         ORDER BY tp.`create_time` DESC
     </select>
-
-
+    
+    
     <select id="searchFoPage" resultType="com.yizhi.training.application.vo.fo.TrainingProjectFoVo">
         SELECT
         tp.`id` as id,
@@ -139,8 +139,8 @@
         </if>
         ORDER BY tp.`create_time` DESC
     </select>
-
-
+    
+    
     <!--版本2 -->
     <select id="searchPageV2" resultType="com.yizhi.training.application.vo.domain.TrainingProjectVo">
         SELECT
@@ -169,7 +169,7 @@
             <if test="enableEnroll != null and enablePay != null">
                 and enroll.enable_pay = #{enablePay}
             </if>
-
+            
             <if test="tpClassificationId != null">
                 AND tp.`tp_classification_id` = #{tpClassificationId}
             </if>
@@ -185,11 +185,11 @@
             <if test="name != null">
                 AND (tp.`name` LIKE CONCAT('%', #{name}, '%') or tp.`key_words` LIKE CONCAT('%', #{name}, '%'))
             </if>
-
+        
         </where>
         ORDER BY tp.`create_time` DESC
     </select>
-
+    
     <select id="searchPageCount" resultType="java.lang.Integer">
         SELECT COUNT(1)
         FROM training_project tp
@@ -212,19 +212,19 @@
             and tp.deleted = 0
         </where>
     </select>
-
-
+    
+    
     <select id="searchFoPageCount" resultType="java.lang.Integer">
         SELECT COUNT(1)
         FROM training_project tp
-
+        
         WHERE tp.deleted = 0 and tp.status =1
         <if test="siteId != null">
             AND tp.`site_id` = #{siteId}
         </if>
-
+    
     </select>
-
+    
     <!--
         门户首页：培训列表
     -->
@@ -246,7 +246,7 @@
         )
         order by tb.start_time asc,tb.create_time desc
     </select>
-
+    
     <!-- 培训项目首页列表 -->
     <select id="apiPageList" resultType="com.yizhi.training.application.vo.domain.TrainingProjectVo">
         select tb.*,en.enable_pay,en.actual_price,en.pay_type
@@ -256,7 +256,7 @@
         -- 首先用站点 id 和上架状态缩小范围
         (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and tb.end_time &gt;= #{now}
         and tb.start_time &lt;= #{now})
-
+        
         and
         (
         -- 平台可见 and 不需要报名
@@ -277,8 +277,8 @@
             or
             tb.name like concat('%', #{keyword}, '%'))
         </if>
-
-
+        
+        
         <!--查询关闭报名的、或者开启报名，非付费的；或者开启报名并且开启付费并且配置显示再项目列表中； 的项目-->
         <if test="enablePay != null and enablePay.equals(0)">
             and (tb.enable_enroll = 0 or en.enable_pay = '0' or (tb.enable_enroll = 1 and tb.enable_queue = 1 and
@@ -290,7 +290,7 @@
         </if>
         order by tb.start_time desc,tb.create_time desc
     </select>
-
+    
     <select id="apiPageListCount" resultType="java.lang.Integer">
         select count(1)
         from training_project tb
@@ -319,7 +319,7 @@
             tb.name like concat('%', #{keyword}, '%'))
         </if>
     </select>
-
+    
     <!-- 我的培训项目列表  未开始（已上架，开始时间大于当前时间）-->
     <!-- 1.平台可见 -->
     <!-- 2.指定学员 -->
@@ -344,7 +344,7 @@
         </if>
         order by tb.start_time asc,tb.create_time desc
     </select>
-
+    
     <select id="selectMyCommingPageNum" resultType="java.lang.Integer">
         select COUNT (tb.id)
         from training_project tb
@@ -419,9 +419,9 @@
         <if test="keyword != null">
             and (tb.key_words like concat('%', #{keyword}, '%') or tb.name like concat('%', #{keyword}, '%'))
         </if>
-
+    
     </select>
-
+    
     <!-- 我的培训项目列表  已结束 -->
     <select id="selectMyFinishedPage" resultMap="BaseResultMap">
         <!-- 已完成的 且 进行中的 -->
@@ -446,9 +446,9 @@
             #{item}</foreach>)
         </if>
         )
-
+        
         union all
-
+        
         <!-- 已结束的 -->
         select
         <include refid="Base_Column_List_simple"/>
@@ -491,9 +491,9 @@
             #{item}</foreach>)
         </if>
         )
-
+        
         union all
-
+        
         <!-- 已结束的 -->
         select
         tb.id
@@ -539,9 +539,9 @@
             and (tb.id not in <foreach collection="finishedTpIds" open="(" close=")" separator="," item="item">
             #{item}</foreach>)
         </if>
-
+    
     </select>
-
+    
     <!-- 查询参加人数
             1.需要报名的培训项目已经报名的人数
             2.不需要报名-可见范围是指定学员
@@ -551,7 +551,7 @@
         from tp_student_enroll_passed tb
         where tb.training_project_id = #{projectId}
     </select>
-
+    
     <select id="getMyTrainingProjectCountNum" resultType="java.lang.Integer">
         select count(1)
         from training_project tb
@@ -572,7 +572,7 @@
             #{item}</foreach>)
         </if>
     </select>
-
+    
     <!-- 火热报名 -->
     <resultMap id="hotEnrollListVo" type="com.yizhi.training.application.vo.api.HotEnrollListVo">
         <result column="tb_training_projectId" property="trainingProjectId"/>
@@ -636,7 +636,7 @@
         </if>
         and (<![CDATA[ DATE_FORMAT(#{now}, '%Y-%m-%d') >= DATE_FORMAT(en.start_time, '%Y-%m-%d') ]]>
         and <![CDATA[ DATE_FORMAT(en.end_time, '%Y-%m-%d') >= DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>)
-
+    
     </select>
     <update id="batchDelete">
         update training_project
@@ -647,7 +647,7 @@
         where id in
         (<foreach collection="ids" item="item" separator=",">#{item}</foreach>)
     </update>
-
+    
     <select id="getvisibileBySiteIdAndBetweenTime" resultType="com.yizhi.training.application.domain.TrainingProject">
         select *
         from training_project
@@ -658,29 +658,29 @@
           and status = 1
           and visibile_range = 1
     </select>
-
+    
     <select id="getList" resultType="com.yizhi.training.application.domain.TrainingProject">
         select *
         from training_project
         where id in
         <foreach collection="ids" item="id" index="index" open="(" close=")" separator=",">#{id}</foreach>
     </select>
-
-
+    
+    
     <select id="queryTrainingListByRelationIds" resultMap="BaseResultMap">
-
+        
         select
         <include refid="Base_Column_List"/>
         from
         (
         select * from training_project as a
         where a.`status`=1 and a.deleted=0 and a.visible_range=1 and a.site_id=#{siteId}
-        <if test="relationIds!=null and relationIds.size()>0">
+        <if test="accountRelBizIds!=null and accountRelBizIds.size()>0">
             union
-            select a.* from training_project as a right join tp_authorization_range as b on a.id=b.biz_id and b.deleted
-            = 0
-            where a.`status`=1 and a.deleted=0 and a.visible_range=0 and a.site_id=#{siteId} and b.relation_id in
-            <foreach collection="relationIds" item="relationId" index="index" open="(" close=")" separator=",">
+            select a.* from training_project as a
+            
+            where a.`status`=1 and a.deleted=0 and a.visible_range=0 and a.site_id=#{siteId} and a.id  in
+            <foreach collection="accountRelBizIds" item="relationId" index="index" open="(" close=")" separator=",">
                 #{relationId}
             </foreach>
             group by a.id
@@ -695,8 +695,8 @@
         </if>
         order by create_time desc limit #{num}
     </select>
-
-
+    
+    
     <select id="selectMyCommingCount" resultType="java.lang.Integer">
         select count(1)
         from training_project tb
@@ -717,7 +717,7 @@
         </if>
         order by tb.start_time asc
     </select>
-
+    
     <select id="selectMyJoinedCount" resultType="java.lang.Integer">
         select count(1)
         from training_project tb
@@ -744,22 +744,22 @@
         </if>
         order by tb.end_time asc
     </select>
-
+    
     <select id="selectMyFinishedCount" resultType="java.lang.Integer">
         SELECT COUNT(1)
         FROM training_project tb
                  LEFT JOIN tp_student_project_record tspr ON tspr.training_project_id = tb.id
         WHERE tb.site_id = #{siteId}
-
+          
           AND tspr.site_id = #{siteId}
-
+          
           AND tspr.account_id = #{accountId}
-
+          
           AND tspr.finished = 1
           AND tb.STATUS = 1
     </select>
-
-
+    
+    
     <select id="selectMyExpiredCount" resultType="java.lang.Integer">
         select count(1)
         from training_project tb
@@ -783,8 +783,8 @@
             #{item}</foreach>)
         </if>
     </select>
-
-
+    
+    
     <select id="getTrainingList" resultMap="BaseResultMap">
         select
         <include refid="Base_Column_List"/>
@@ -797,19 +797,19 @@
             <foreach collection="ids" separator="," open="(" close=")" item="item">#{item}</foreach>
         </if>
     </select>
-
+    
     <select id="getAllSiteIds" resultType="java.lang.Long">
         select site_id
         from training_project
         GROUP BY site_id
     </select>
-
+    
     <select id="getCaseLibraryProject" resultType="com.yizhi.training.application.domain.TrainingProject">
         select * from training_project
         where id in
         <foreach collection="idList" separator="," open="(" close=")" item="item">#{item}</foreach>
     </select>
-
+    
     <select id="getCaseLibraryRangeProjects" resultType="com.yizhi.training.application.domain.TrainingProject">
         select tb.id,tb.`name`,tb.end_time
         from training_project tb
@@ -832,10 +832,10 @@
             #{item}</foreach>)
         </if>
         )
-
+        
         order by tb.end_time
     </select>
-
+    
     <!--  获取培训项目下的id集合  -->
     <select id="allTpBySiteId" resultType="com.yizhi.training.application.domain.TrainingProject">
         select id, visible_range as visibleRange
@@ -847,7 +847,7 @@
          and <![CDATA[ DATE_FORMAT(start_time, '%Y-%m-%d') <= DATE_FORMAT(#{endDate}, '%Y-%m-%d')
         ]]>
     </select>
-
+    
     <!--  获取应该参加人数  -->
     <select id="getTpShouldPeople" resultType="java.lang.Integer">
         SELECT -- 应该参加的人数
@@ -858,7 +858,7 @@
             #{item}
         </foreach>
     </select>
-
+    
     <select id="getPageToCalendar" resultMap="BaseResultMap">
         SELECT
         c.id AS tb_id,
@@ -875,7 +875,7 @@
         <if test="finishTrIds != null and finishTrIds.size> 0">
             and c.id not in (<foreach collection="finishTrIds" item="id" separator=",">#{id}</foreach>)
         </if>
-
+        
         and (c.visible_range = 1
         <if test="trIds != null and trIds.size > 0">
             or c.id in (<foreach collection="trIds" item="item" separator=",">#{item}</foreach>)
@@ -889,7 +889,7 @@
         AND (c.end_time IS NULL OR DATE_FORMAT(c.end_time, '%Y-%m-%d') &gt;= DATE_FORMAT(#{currentDate}, '%Y-%m-%d'))
         order by c.start_time desc,c.end_time desc
     </select>
-
+    
     <select id="getPageToCalendarNum" resultType="java.lang.Integer">
         select count(1)
         from training_project c
@@ -897,7 +897,7 @@
         <if test="finishTrIds != null and finishTrIds.size> 0">
             and c.id not in (<foreach collection="finishTrIds" item="id" separator=",">#{id}</foreach>)
         </if>
-
+        
         and (c.visible_range = 1
         <if test="trIds != null and trIds.size > 0">
             or c.id in (<foreach collection="trIds" item="item" separator=",">#{item}</foreach>)
@@ -910,7 +910,7 @@
         '%Y-%m-%d'))
         AND (c.end_time IS NULL OR DATE_FORMAT(c.end_time, '%Y-%m-%d') &gt;= DATE_FORMAT(#{currentDate}, '%Y-%m-%d'))
     </select>
-
+    
     <select id="getIdsByDate" resultType="Long">
         select id
         from training_project c
@@ -922,7 +922,7 @@
                DATE_FORMAT(c.start_time, '%Y-%m-%d') &lt;= DATE_FORMAT(#{currentDate}, '%Y-%m-%d'))
           AND (c.end_time IS NULL OR DATE_FORMAT(c.end_time, '%Y-%m-%d') &gt;= DATE_FORMAT(#{currentDate}, '%Y-%m-%d'))
     </select>
-
+    
     <!-- 精品内容展示付费资源 -->
     <select id="apiPaidPageList" resultType="com.yizhi.training.application.vo.api.PaidTrainingProjectVO">
         select tb.id, tb.name, tb.logo_img as logoImg, tb.release_time as releaseTime,tb.start_time as
@@ -933,13 +933,13 @@
         left join training_project tb on tb.id = te.training_project_id and te.enable_pay = 1 <!-- 报名付费-->
         and (<![CDATA[ DATE_FORMAT(te.end_time, '%Y-%m-%d') >= DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>) and (
         <![CDATA[ DATE_FORMAT(te.start_time, '%Y-%m-%d') <= DATE_FORMAT(#{now}, '%Y-%m-%d') ]]>)
---         and te.pay_type != 2 <!-- 筛选付费方式 去除 纯兑换码方式  会员重构放开限制-->
+        --         and te.pay_type != 2 <!-- 筛选付费方式 去除 纯兑换码方式  会员重构放开限制-->
         left join tr_enroll_record ter on tb.id = ter.training_project_id and audit_status = 0 <!-- 0: 无需审核-->
         where
         -- 首先用站点 id 和上架状态缩小范围
         (tb.site_id = #{siteId} and tb.status = 1 and tb.deleted = 0 and
         (<![CDATA[ DATE_FORMAT(tb.end_time, '%Y-%m-%d') >= DATE_FORMAT(#{now}, '%Y-%m-%d') ]]> or tb.end_time is null)
-
+        
         )
         and
         (
@@ -1014,18 +1014,18 @@
         ORDER BY tp.release_time DESC
     </select>
     <select id="selectPageList"
-            resultType="com.yizhi.training.application.vo.dashboard.TrainDashboardResourceVO">
+        resultType="com.yizhi.training.application.vo.dashboard.TrainDashboardResourceVO">
         SELECT p.*
         from training_project p
         where p.company_id = #{companyId}
           and p.site_id = #{siteId}
           and p.deleted = 0
         ORDER BY p.update_time desc, p.id
-
+    
     </select>
     <select id="selectJoinCount"
-            resultType="com.yizhi.training.application.vo.dashboard.TrainDashboardResourceVO">
-
+        resultType="com.yizhi.training.application.vo.dashboard.TrainDashboardResourceVO">
+        
         SELECT r.training_project_id as id
         ,COUNT(DISTINCT r.account_id) as joinCount
         ,COUNT(r.id) as joinPersonTime
